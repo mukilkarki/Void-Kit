@@ -723,6 +723,17 @@
           </div>
         </div>
 
+        <!-- Clear All Data -->
+        <div class="acc-card" style="border-color:rgba(255,153,0,.3);">
+          <div class="acc-card-title" style="color:var(--yellow);">CLEAR ALL DATA</div>
+          <div style="font-family:var(--mono);font-size:.75rem;color:var(--text-dim);margin-bottom:16px;">
+            Delete all your victims data. This cannot be undone.
+          </div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            <button class="btn-sm danger" onclick="clearAllUserData()">CLEAR ALL DATA</button>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -1010,6 +1021,21 @@ window.clearAllVictims = async () => {
     toast('ALL RECORDS DELETED');
     victims = [];
     renderVictims();
+  } catch(e) {
+    toast('ERROR: ' + e.message, true);
+  }
+};
+
+window.clearAllUserData = async () => {
+  if (!confirm('Are you sure you want to delete ALL your victims data? This cannot be undone.')) return;
+  try {
+    const batch = db.batch();
+    victims.forEach(v => batch.delete(doc(db, 'victims', v.id)));
+    await batch.commit();
+    toast('ALL DATA CLEARED');
+    victims = [];
+    renderVictims();
+    updateStats();
   } catch(e) {
     toast('ERROR: ' + e.message, true);
   }
