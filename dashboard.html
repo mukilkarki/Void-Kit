@@ -1509,12 +1509,9 @@ window.generateTunnelForSite = (siteIndex) => {
   
   tunnels.push(tunnel);
   
-  // Show tunnel modal and auto-copy URL to clipboard
-  showTunnelModal(tunnel);
-  
-  // Auto-copy URL to clipboard
+  // Auto-copy URL to clipboard FIRST
   navigator.clipboard.writeText(tunnel.url).then(() => {
-    toast('URL GENERATED & COPIED TO CLIPBOARD ✅');
+    toast('✅ LINK COPIED TO CLIPBOARD');
   }).catch(() => {
     // Fallback for older browsers
     const textarea = document.createElement('textarea');
@@ -1523,8 +1520,13 @@ window.generateTunnelForSite = (siteIndex) => {
     textarea.select();
     document.execCommand('copy');
     document.body.removeChild(textarea);
-    toast('URL GENERATED & COPIED TO CLIPBOARD ✅');
+    toast('✅ LINK COPIED TO CLIPBOARD');
   });
+  
+  // Show tunnel modal AFTER notification
+  setTimeout(() => {
+    showTunnelModal(tunnel);
+  }, 800);
 };
 
 // Show tunnel modal
