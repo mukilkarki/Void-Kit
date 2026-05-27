@@ -1001,6 +1001,20 @@ window.addDemoVictim = async () => {
   } catch(e){ toast('FIRESTORE NOT CONFIGURED — set up rules',true); }
 };
 
+window.clearAllVictims = async () => {
+  if (!confirm('Are you sure you want to delete ALL records? This cannot be undone.')) return;
+  try {
+    const batch = db.batch();
+    victims.forEach(v => batch.delete(doc(db, 'victims', v.id)));
+    await batch.commit();
+    toast('ALL RECORDS DELETED');
+    victims = [];
+    renderVictims();
+  } catch(e) {
+    toast('ERROR: ' + e.message, true);
+  }
+};
+
 // ============ ACCOUNT ============
 function updateAccountPage() {
   const u = auth.currentUser;
