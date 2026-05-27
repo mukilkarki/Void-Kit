@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SYS::ACCESS — Control Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #070b0f;
+    --bg2: #0d1117;
+    --bg3: #111820;
+    --panel: #0a0f14;
+    --border: #1a2a3a;
+    --border-glow: #00ff9940;
+    --accent: #00ff99;
+    --accent2: #00c8ff;
+    --accent3: #ff3366;
+    --text: #c8e6c9;
+    --text-dim: #4a6a5a;
+    --text-bright: #e8fff0;
+    --red: #ff3366;
+    --yellow: #ffcc00;
+    --mono: 'Share Tech Mono', monospace;
+    --display: 'Orbitron', sans-serif;
+    --body: 'Rajdhani', sans-serif;
+  }
+  [data-theme="light"] {
+    --bg: #f0f4f8;
+    --bg2: #e2e8f0;
+    --bg3: #cbd5e0;
+    --panel: #ffffff;
+    --border: #b0c4d8;
+    --border-glow: #00998840;
+    --accent: #007755;
+    --accent2: #0066cc;
+    --accent3: #cc0033;
+    --text: #1a3a2a;
+    --text-dim: #6a8a7a;
+    --text-bright: #0a1a10;
+  }
+  [data-theme="red"] {
+    --accent: #ff3366;
+    --accent2: #ff9900;
+    --border-glow: #ff336640;
+    --text: #ffd0d8;
+    --text-dim: #6a3a4a;
+    --text-bright: #ffe8f0;
+  }
+  [data-theme="blue"] {
+    --accent: #00c8ff;
+    --accent2: #7744ff;
+    --border-glow: #00c8ff40;
+    --text: #c8e8ff;
+    --text-dim: #3a5a6a;
+    --text-bright: #e8f8ff;
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--body);}
+
+  /* SCANLINES */
+  body::before{
+    content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.15) 2px,rgba(0,0,0,.15) 4px);
+  }
+
+  /* NOISE */
+  body::after{
+    content:'';position:fixed;inset:0;z-index:9998;pointer-events:none;opacity:.03;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ===== SCREENS ===== */
+  .screen{display:none;height:100vh;overflow:hidden;}
+  .screen.active{display:flex;}
+
+  /* ===== LOGIN ===== */
+  #loginScreen{
+    align-items:center;justify-content:center;
+    background: radial-gradient(ellipse at 50% 60%, #0a1f14 0%, var(--bg) 70%);
+    flex-direction:column;
+    gap:0;
+  }
+  .login-glitch{
+    font-family:var(--display);font-size:clamp(2rem,6vw,4rem);
+    font-weight:900;letter-spacing:.3em;color:var(--accent);
+    text-shadow:0 0 20px var(--accent),0 0 60px var(--accent);
+    animation:glitch 4s infinite;
+    margin-bottom:8px;
+  }
+  .login-sub{
+    font-family:var(--mono);font-size:.75rem;color:var(--text-dim);
+    letter-spacing:.4em;margin-bottom:48px;
+    animation:blink 1.5s step-end infinite;
+  }
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+  @keyframes glitch{
+    0%,95%{text-shadow:0 0 20px var(--accent),0 0 60px var(--accent);}
+    96%{text-shadow:-4px 0 var(--accent2),4px 0 var(--accent3);}
+    97%{text-shadow:4px 0 var(--accent2),-4px 0 var(--accent3);}
+    98%{text-shadow:0 0 20px var(--accent),0 0 60px var(--accent);}
+  }
+
+  .login-box{
+    background:var(--panel);border:1px solid var(--border);
+    padding:40px;width:min(420px,90vw);
+    box-shadow:0 0 40px var(--border-glow),inset 0 0 40px rgba(0,255,153,.02);
+    position:relative;
+  }
+  .login-box::before{
+    content:'';position:absolute;top:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg,transparent,var(--accent),transparent);
+  }
+  .corner{position:absolute;width:12px;height:12px;border-color:var(--accent);border-style:solid;}
+  .corner.tl{top:-1px;left:-1px;border-width:2px 0 0 2px;}
+  .corner.tr{top:-1px;right:-1px;border-width:2px 2px 0 0;}
+  .corner.bl{bottom:-1px;left:-1px;border-width:0 0 2px 2px;}
+  .corner.br{bottom:-1px;right:-1px;border-width:0 2px 2px 0;}
+
+  .field-label{font-family:var(--mono);font-size:.65rem;color:var(--text-dim);letter-spacing:.2em;margin-bottom:6px;}
+  .field-input{
+    width:100%;background:var(--bg);border:1px solid var(--border);
+    color:var(--text-bright);font-family:var(--mono);font-size:.9rem;
+    padding:12px 16px;outline:none;transition:border-color .2s,box-shadow .2s;
+    margin-bottom:20px;
+  }
+  .field-input:focus{border-color:var(--accent);box-shadow:0 0 10px var(--border-glow);}
+  .btn-primary{
+    width:100%;background:transparent;border:1px solid var(--accent);
+    color:var(--accent);font-family:var(--display);font-size:.75rem;
+    letter-spacing:.3em;padding:14px;cursor:pointer;
+    transition:all .2s;text-transform:uppercase;
+  }
+  .btn-primary:hover{background:var(--accent);color:var(--bg);box-shadow:0 0 20px var(--border-glow);}
+  .login-err{font-family:var(--mono);font-size:.75rem;color:var(--red);margin-top:12px;min-height:20px;text-align:center;}
+  .login-toggle{
+    font-family:var(--mono);font-size:.7rem;color:var(--text-dim);
+    margin-top:16px;text-align:center;cursor:pointer;
+  }
+  .login-toggle span{color:var(--accent2);cursor:pointer;text-decoration:underline;}
+
+  /* ===== DASHBOARD ===== */
+  #dashScreen{flex-direction:row;}
+
+  /* SIDEBAR */
+  .sidebar{
+    width:220px;min-width:220px;background:var(--panel);
+    border-right:1px solid var(--border);
+    display:flex;flex-direction:column;
+    padding:0;
+    box-shadow:2px 0 20px rgba(0,255,153,.05);
+    z-index:10;
+  }
+  .sidebar-logo{
+    padding:24px 20px;border-bottom:1px solid var(--border);
+    font-family:var(--display);font-size:.8rem;font-weight:700;
+    color:var(--accent);letter-spacing:.3em;
+    text-shadow:0 0 10px var(--accent);
+  }
+  .sidebar-logo span{display:block;font-family:var(--mono);font-size:.55rem;color:var(--text-dim);letter-spacing:.2em;margin-top:4px;}
+  .nav-item{
+    display:flex;align-items:center;gap:12px;
+    padding:14px 20px;cursor:pointer;
+    border-left:2px solid transparent;
+    font-family:var(--mono);font-size:.78rem;color:var(--text-dim);
+    letter-spacing:.1em;transition:all .15s;
+    text-transform:uppercase;
+  }
+  .nav-item:hover{color:var(--text);background:rgba(255,255,255,.03);}
+  .nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(0,255,153,.05);}
+  .nav-item .nav-icon{font-size:1rem;width:18px;text-align:center;}
+  .nav-spacer{flex:1;}
+  .sidebar-user{
+    padding:16px 20px;border-top:1px solid var(--border);
+    font-family:var(--mono);font-size:.7rem;color:var(--text-dim);
+  }
+  .sidebar-user strong{color:var(--accent);display:block;margin-bottom:2px;font-size:.8rem;}
+  .status-dot{display:inline-block;width:6px;height:6px;background:var(--accent);border-radius:50%;margin-right:6px;box-shadow:0 0 6px var(--accent);animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  /* MAIN */
+  .main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+  .topbar{
+    background:var(--panel);border-bottom:1px solid var(--border);
+    padding:0 28px;height:52px;display:flex;align-items:center;
+    justify-content:space-between;
+    font-family:var(--mono);font-size:.7rem;color:var(--text-dim);
+    flex-shrink:0;
+  }
+  .topbar-path{color:var(--accent);}
+  .topbar-right{display:flex;align-items:center;gap:20px;}
+  .topbar-time{letter-spacing:.1em;}
+
+  .page{display:none;flex:1;overflow-y:auto;padding:28px;flex-direction:column;}
+  .page.active{display:flex;}
+
+  /* Scrollbar */
+  ::-webkit-scrollbar{width:4px;}
+  ::-webkit-scrollbar-track{background:var(--bg);}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+  ::-webkit-scrollbar-thumb:hover{background:var(--accent);}
+
+  /* ===== TERMINAL PAGE ===== */
+  .term-header{
+    font-family:var(--display);font-size:1.4rem;font-weight:700;
+    color:var(--accent);letter-spacing:.2em;margin-bottom:24px;
+  }
+  .term-window{
+    background:var(--bg);border:1px solid var(--border);
+    flex:1;padding:20px;font-family:var(--mono);font-size:.82rem;
+    color:var(--text);overflow-y:auto;
+    box-shadow:inset 0 0 30px rgba(0,0,0,.4);
+    min-height:300px;max-height:calc(100vh - 280px);
+  }
+  .term-line{padding:2px 0;line-height:1.6;}
+  .term-line .prompt{color:var(--accent);}
+  .term-line .cmd{color:var(--text-bright);}
+  .term-line .out{color:var(--text-dim);}
+  .term-line .err{color:var(--red);}
+  .term-line .info{color:var(--accent2);}
+  .term-input-row{
+    display:flex;align-items:center;gap:8px;
+    background:var(--bg);border:1px solid var(--border);
+    border-top:none;padding:12px 20px;
+  }
+  .term-prompt-label{font-family:var(--mono);font-size:.82rem;color:var(--accent);white-space:nowrap;}
+  .term-input{
+    flex:1;background:transparent;border:none;outline:none;
+    font-family:var(--mono);font-size:.82rem;color:var(--text-bright);
+  }
+  .term-stats{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+    gap:16px;margin-bottom:24px;
+  }
+  .stat-card{
+    background:var(--panel);border:1px solid var(--border);padding:16px 20px;
+    position:relative;overflow:hidden;
+  }
+  .stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);}
+  .stat-card .s-label{font-family:var(--mono);font-size:.6rem;color:var(--text-dim);letter-spacing:.2em;text-transform:uppercase;}
+  .stat-card .s-val{font-family:var(--display);font-size:1.6rem;font-weight:700;color:var(--accent);margin-top:4px;}
+
+  /* ===== VICTIMS TABLE ===== */
+  .page-header{
+    display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;
+  }
+  .page-title{font-family:var(--display);font-size:1.2rem;font-weight:700;color:var(--accent);letter-spacing:.2em;}
+  .search-bar{
+    background:var(--bg);border:1px solid var(--border);
+    color:var(--text-bright);font-family:var(--mono);font-size:.8rem;
+    padding:8px 16px;outline:none;width:240px;
+  }
+  .search-bar:focus{border-color:var(--accent);}
+  .sort-btns{display:flex;gap:8px;flex-wrap:wrap;}
+  .sort-btn{
+    background:transparent;border:1px solid var(--border);
+    color:var(--text-dim);font-family:var(--mono);font-size:.65rem;
+    padding:6px 12px;cursor:pointer;letter-spacing:.1em;transition:all .15s;
+  }
+  .sort-btn:hover,.sort-btn.active{border-color:var(--accent);color:var(--accent);}
+  .table-wrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.75rem;}
+  thead tr{background:var(--bg);border-bottom:2px solid var(--accent);}
+  th{padding:12px 14px;text-align:left;color:var(--accent);letter-spacing:.15em;font-weight:400;white-space:nowrap;}
+  tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
+  tbody tr:hover{background:rgba(0,255,153,.04);}
+  td{padding:10px 14px;color:var(--text);white-space:nowrap;}
+  td.td-email{color:var(--accent2);}
+  td.td-pass{color:var(--yellow);font-family:var(--mono);}
+  td.td-ip{color:var(--text-dim);}
+  .btn-del{
+    background:transparent;border:1px solid var(--red);
+    color:var(--red);font-family:var(--mono);font-size:.65rem;
+    padding:4px 10px;cursor:pointer;transition:all .15s;
+  }
+  .btn-del:hover{background:var(--red);color:#fff;}
+  .no-data{text-align:center;color:var(--text-dim);padding:48px;font-family:var(--mono);}
+
+  /* ===== MY ACCOUNT ===== */
+  .acc-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  @media(max-width:700px){.acc-grid{grid-template-columns:1fr;}}
+  .acc-card{
+    background:var(--panel);border:1px solid var(--border);padding:24px;
+    position:relative;
+  }
+  .acc-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent2),transparent);}
+  .acc-card-title{font-family:var(--display);font-size:.7rem;letter-spacing:.3em;color:var(--accent2);margin-bottom:20px;text-transform:uppercase;}
+  .avatar-area{display:flex;align-items:center;gap:20px;margin-bottom:20px;}
+  .avatar{
+    width:72px;height:72px;border-radius:50%;border:2px solid var(--accent);
+    background:var(--bg);display:flex;align-items:center;justify-content:center;
+    font-size:2rem;overflow:hidden;cursor:pointer;position:relative;
+    box-shadow:0 0 20px var(--border-glow);
+  }
+  .avatar img{width:100%;height:100%;object-fit:cover;}
+  .avatar-info .uname{font-family:var(--display);font-size:.9rem;color:var(--accent);}
+  .avatar-info .uemail{font-family:var(--mono);font-size:.7rem;color:var(--text-dim);margin-top:4px;}
+  .form-row{margin-bottom:16px;}
+  .form-label{font-family:var(--mono);font-size:.65rem;color:var(--text-dim);letter-spacing:.15em;margin-bottom:6px;}
+  .form-input{
+    width:100%;background:var(--bg);border:1px solid var(--border);
+    color:var(--text-bright);font-family:var(--mono);font-size:.82rem;
+    padding:10px 14px;outline:none;transition:border-color .2s;
+  }
+  .form-input:focus{border-color:var(--accent);}
+  .btn-sm{
+    background:transparent;border:1px solid var(--accent);
+    color:var(--accent);font-family:var(--mono);font-size:.7rem;
+    padding:8px 16px;cursor:pointer;letter-spacing:.15em;transition:all .15s;
+  }
+  .btn-sm:hover{background:var(--accent);color:var(--bg);}
+  .btn-sm.danger{border-color:var(--red);color:var(--red);}
+  .btn-sm.danger:hover{background:var(--red);color:#fff;}
+  .btn-sm.info{border-color:var(--accent2);color:var(--accent2);}
+  .btn-sm.info:hover{background:var(--accent2);color:var(--bg);}
+  .msg-ok{font-family:var(--mono);font-size:.72rem;color:var(--accent);margin-top:8px;}
+  .msg-err{font-family:var(--mono);font-size:.72rem;color:var(--red);margin-top:8px;}
+
+  /* ===== SETTINGS ===== */
+  .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  @media(max-width:700px){.settings-grid{grid-template-columns:1fr;}}
+  .set-card{background:var(--panel);border:1px solid var(--border);padding:24px;}
+  .set-card-title{font-family:var(--display);font-size:.7rem;letter-spacing:.3em;color:var(--accent);margin-bottom:20px;text-transform:uppercase;}
+  .theme-swatches{display:flex;gap:10px;flex-wrap:wrap;}
+  .swatch{
+    width:44px;height:44px;border:2px solid transparent;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:.55rem;letter-spacing:.05em;
+    transition:all .15s;
+  }
+  .swatch.active{border-color:var(--accent);box-shadow:0 0 10px var(--border-glow);}
+  .export-btns{display:flex;flex-direction:column;gap:10px;}
+  .export-btn{
+    display:flex;align-items:center;gap:12px;
+    background:var(--bg);border:1px solid var(--border);
+    color:var(--text);font-family:var(--mono);font-size:.78rem;
+    padding:12px 16px;cursor:pointer;transition:all .15s;text-align:left;
+  }
+  .export-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .export-btn .ext{
+    font-family:var(--display);font-size:.65rem;letter-spacing:.1em;
+    color:var(--accent);border:1px solid var(--accent);padding:2px 6px;min-width:44px;text-align:center;
+  }
+
+  /* MODAL */
+  .modal-overlay{
+    display:none;position:fixed;inset:0;z-index:1000;
+    background:rgba(0,0,0,.8);backdrop-filter:blur(4px);
+    align-items:center;justify-content:center;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal{
+    background:var(--panel);border:1px solid var(--border);
+    padding:32px;width:min(420px,90vw);
+    box-shadow:0 0 40px var(--border-glow);
+    position:relative;
+  }
+  .modal::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent3),transparent);}
+  .modal-title{font-family:var(--display);font-size:.9rem;letter-spacing:.2em;color:var(--accent3);margin-bottom:20px;}
+  .modal-btns{display:flex;gap:12px;margin-top:20px;}
+
+  /* TOAST */
+  .toast{
+    position:fixed;bottom:28px;right:28px;z-index:2000;
+    background:var(--panel);border:1px solid var(--accent);
+    color:var(--accent);font-family:var(--mono);font-size:.78rem;
+    padding:12px 20px;box-shadow:0 0 20px var(--border-glow);
+    transform:translateX(120%);transition:transform .3s;
+    max-width:300px;
+  }
+  .toast.show{transform:translateX(0);}
+  .toast.error{border-color:var(--red);color:var(--red);box-shadow:0 0 20px rgba(255,51,102,.3);}
+
+  /* LOADING */
+  #loadOverlay{
+    position:fixed;inset:0;z-index:5000;
+    background:var(--bg);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:16px;
+    transition:opacity .5s;
+  }
+  #loadOverlay.hidden{opacity:0;pointer-events:none;}
+  .load-bar-wrap{width:200px;height:2px;background:var(--border);}
+  .load-bar{height:100%;background:var(--accent);width:0;transition:width .3s;box-shadow:0 0 8px var(--accent);}
+  .load-text{font-family:var(--mono);font-size:.7rem;color:var(--text-dim);letter-spacing:.2em;}
+
+  /* firebase config notice */
+  .cfg-notice{
+    background:rgba(255,204,0,.08);border:1px solid var(--yellow);
+    padding:12px 16px;font-family:var(--mono);font-size:.72rem;color:var(--yellow);
+    margin-bottom:20px;
+  }
+  .cfg-notice a{color:var(--accent2);}
+
+  /* ===== SITES PAGE ===== */
+
+.sites-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+  gap:20px;
+}
+
+.site-card{
+  background:var(--panel);
+  border:1px solid var(--border);
+  overflow:hidden;
+  position:relative;
+  transition:.2s;
+}
+
+.site-card:hover{
+  transform:translateY(-4px);
+  border-color:var(--accent);
+  box-shadow:0 0 20px var(--border-glow);
+}
+
+.site-preview{
+  width:100%;
+  height:180px;
+  object-fit:cover;
+  background:#111;
+}
+
+.site-content{
+  padding:18px;
+}
+
+.site-title{
+  font-family:var(--display);
+  color:var(--accent);
+  font-size:.9rem;
+  letter-spacing:.15em;
+  margin-bottom:10px;
+}
+
+.site-desc{
+  font-family:var(--mono);
+  color:var(--text-dim);
+  font-size:.72rem;
+  line-height:1.6;
+  margin-bottom:14px;
+}
+
+.site-tags{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-bottom:16px;
+}
+
+.site-tag{
+  border:1px solid var(--border);
+  padding:4px 8px;
+  font-size:.6rem;
+  font-family:var(--mono);
+  color:var(--accent2);
+}
+
+.site-btn{
+  width:100%;
+  background:transparent;
+  border:1px solid var(--accent);
+  color:var(--accent);
+  padding:10px;
+  cursor:pointer;
+  font-family:var(--display);
+  letter-spacing:.2em;
+  transition:.2s;
+}
+
+.site-btn:hover{
+  background:var(--accent);
+  color:var(--bg);
+}
+</style>
+</head>
+<body>
+
+<!-- LOAD OVERLAY -->
+<div id="loadOverlay">
+  <div style="font-family:var(--display);font-size:1.2rem;color:var(--accent);letter-spacing:.4em;">INITIALIZING</div>
+  <div class="load-bar-wrap"><div class="load-bar" id="loadBar"></div></div>
+  <div class="load-text" id="loadText">CONNECTING TO FIREBASE...</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
+    <div class="modal-title">⚠ CONFIRM DELETION</div>
+    <div style="font-family:var(--mono);font-size:.8rem;color:var(--text);">This action is irreversible. Delete this record permanently?</div>
+    <div class="modal-btns">
+      <button class="btn-sm danger" id="confirmDelBtn">CONFIRM DELETE</button>
+      <button class="btn-sm" onclick="closeModal('deleteModal')">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE ACCOUNT MODAL -->
+<div class="modal-overlay" id="deleteAccModal">
+  <div class="modal">
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
+    <div class="modal-title">⚠ DELETE ACCOUNT</div>
+    <div style="font-family:var(--mono);font-size:.8rem;color:var(--text);margin-bottom:12px;">Enter your password to confirm account deletion:</div>
+    <input class="form-input" type="password" id="delAccPass" placeholder="current password"/>
+    <div class="modal-btns">
+      <button class="btn-sm danger" id="confirmDelAccBtn">DELETE PERMANENTLY</button>
+      <button class="btn-sm" onclick="closeModal('deleteAccModal')">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== LOGIN ==================== -->
+<div class="screen active" id="loginScreen">
+  <div style="text-align:center;">
+    <div class="login-glitch">MRVOID KIT</div>
+    <div class="login-sub">SECURE TERMINAL v2.1 — AUTHENTICATE TO PROCEED</div>
+    <div class="login-box" id="loginBox">
+      <div class="corner tl"></div><div class="corner tr"></div>
+      <div class="corner bl"></div><div class="corner br"></div>
+
+      <!-- Firebase Config -->
+      <div class="cfg-notice" id="cfgNotice">
+       ⚠ This &lt;mrvoid kit&gt; is created for only educational and fun purpose. We are not reponsible for any damage or loss caused by this kit. Please use it in a legal and ethical way.
+        <a href="https://console.firebase.google.com" target="_blank">Teams & Conditions →</a>
+      </div> 
+
+      <div id="loginForm">
+        <div class="field-label">// EMAIL_ADDRESS</div>
+        <input class="field-input" type="email" id="loginEmail" placeholder="user@domain.com" autocomplete="email"/>
+        <div class="field-label">// PASSWORD</div>
+        <input class="field-input" type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password"/>
+        <button class="btn-primary" onclick="doLogin()">[ AUTHENTICATE ]</button>
+        <div class="login-err" id="loginErr"></div>
+        <div class="login-toggle">No account? <span onclick="switchToRegister()">REGISTER</span></div>
+      </div>
+
+      <div id="registerForm" style="display:none;">
+        <div class="field-label">// USERNAME</div>
+        <input class="field-input" type="text" id="regName" placeholder="operator_handle"/>
+        <div class="field-label">// EMAIL_ADDRESS</div>
+        <input class="field-input" type="email" id="regEmail" placeholder="user@domain.com"/>
+        <div class="field-label">// PASSWORD</div>
+        <input class="field-input" type="password" id="regPass" placeholder="min 6 chars"/>
+        <button class="btn-primary" onclick="doRegister()">[ CREATE ACCOUNT ]</button>
+        <div class="login-err" id="regErr"></div>
+        <div class="login-toggle">Have an account? <span onclick="switchToLogin()">LOGIN</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== DASHBOARD ==================== -->
+<div class="screen" id="dashScreen">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo">MRVOID KIT<span>PANEL v2.1</span></div>
+    <div class="nav-item active" data-page="homePage" onclick="showPage('homePage',this)">
+      <span class="nav-icon">⬡</span>HOME
+    </div>
+    <!-- SIDEBAR MENU -->
+<div class="nav-item" data-page="sitesPage" onclick="showPage('sitesPage',this)">
+  <span class="nav-icon">⬢</span>SITES
+</div>
+    <div class="nav-item" data-page="victimsPage" onclick="showPage('victimsPage',this)">
+      <span class="nav-icon">◈</span>VICTIMS
+    </div>
+    <div class="nav-item" data-page="accountPage" onclick="showPage('accountPage',this)">
+      <span class="nav-icon">◉</span>MY ACCOUNT
+    </div>
+    <div class="nav-item" data-page="settingsPage" onclick="showPage('settingsPage',this)">
+      <span class="nav-icon">⚙</span>SETTINGS
+    </div>
+    <div class="nav-spacer"></div>
+    <div class="sidebar-user">
+      <span class="status-dot"></span>ONLINE<br/>
+      <strong id="sidebarUser">—</strong>
+    </div>
+  </div>
+
+  <!-- MAIN AREA -->
+  <div class="main">
+    <div class="topbar">
+      <div>VOID KIT / <span class="topbar-path" id="topbarPath">HOME</span></div>
+      <div class="topbar-right">
+        <span class="topbar-time" id="clock">00:00:00</span>
+        <button class="btn-sm danger" onclick="doLogout()" style="font-size:.65rem;padding:5px 12px;">LOGOUT</button>
+      </div>
+    </div>
+
+    <!-- HOME / TERMINAL -->
+    <div class="page active" id="homePage">
+      <div class="term-stats" id="statsRow">
+        <div class="stat-card"><div class="s-label">TOTAL VICTIMS</div><div class="s-val" id="statVictims">0</div></div>
+        <div class="stat-card"><div class="s-label">UNIQUE IPs</div><div class="s-val" id="statIPs">0</div></div>
+        <div class="stat-card"><div class="s-label">COUNTRIES</div><div class="s-val" id="statCountries">0</div></div>
+        <div class="stat-card"><div class="s-label">TODAY</div><div class="s-val" id="statToday">0</div></div>
+      </div>
+      <div class="term-header">// TERMINAL</div>
+      <div class="term-window" id="termOutput"></div>
+      <div class="term-input-row">
+        <span class="term-prompt-label" id="termPrompt">root@sys:~$</span>
+        <input class="term-input" id="termInput" placeholder="type 'help' for commands..." onkeydown="handleTermKey(event)"/>
+      </div>
+    </div>
+<!-- SITES PAGE -->
+<div class="page" id="sitesPage">
+
+  <div class="page-header">
+    <div class="page-title">// TEMPLATE STORE</div>
+
+    <input
+      class="search-bar"
+      id="siteSearch"
+      placeholder="SEARCH TEMPLATES..."
+      oninput="renderSites()"
+    />
+  </div>
+
+  <div id="sitesGrid" class="sites-grid"></div>
+
+</div>
+    <!-- VICTIMS -->
+    <div class="page" id="victimsPage">
+      <div class="page-header">
+        <div class="page-title">// VICTIMS DATABASE</div>
+        <input class="search-bar" id="searchVictims" placeholder="SEARCH..." oninput="renderVictims()"/>
+      </div>
+      <div class="sort-btns" style="margin-bottom:16px;">
+        <button class="sort-btn active" onclick="setSort('date',this)">DATE</button>
+        <button class="sort-btn" onclick="setSort('email',this)">EMAIL</button>
+        <button class="sort-btn" onclick="setSort('username',this)">USERNAME</button>
+        <button class="sort-btn" onclick="setSort('ip',this)">IP</button>
+        <button class="sort-btn" onclick="setSort('country',this)">COUNTRY</button>
+        <button class="sort-btn" style="margin-left:auto;" onclick="addDemoVictim()">+ ADD DEMO</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>EMAIL</th>
+              <th>USERNAME</th>
+              <th>PASSWORD</th>
+              <th>IP ADDRESS</th>
+              <th>COUNTRY</th>
+              <th>DATE</th>
+              <th>TIME</th>
+              <th>DEL</th>
+            </tr>
+          </thead>
+          <tbody id="victimsBody"></tbody>
+        </table>
+      </div>
+      <div id="noVictims" class="no-data" style="display:none;">
+        <div style="font-family:var(--display);font-size:1.5rem;color:var(--text-dim);margin-bottom:8px;">NO RECORDS</div>
+        <div style="font-size:.8rem;">Victims list is empty or no matches found.</div>
+      </div>
+    </div>
+
+    <!-- MY ACCOUNT -->
+    <div class="page" id="accountPage">
+      <div class="page-title" style="margin-bottom:24px;">// MY ACCOUNT</div>
+      <div class="acc-grid">
+
+        <!-- Profile -->
+        <div class="acc-card">
+          <div class="acc-card-title">PROFILE</div>
+          <div class="avatar-area">
+            <div class="avatar" onclick="document.getElementById('avatarInput').click()" title="Click to change photo">
+              <img id="avatarImg" src="" style="display:none;"/>
+              <span id="avatarInitial">?</span>
+            </div>
+            <input type="file" id="avatarInput" accept="image/*" style="display:none;" onchange="handleAvatar(event)"/>
+            <div class="avatar-info">
+              <div class="uname" id="profileName">—</div>
+              <div class="uemail" id="profileEmail">—</div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-label">// DISPLAY_NAME</div>
+            <input class="form-input" type="text" id="editName" placeholder="your handle"/>
+          </div>
+          <button class="btn-sm" onclick="saveProfile()">SAVE PROFILE</button>
+          <div id="profileMsg"></div>
+        </div>
+
+        <!-- Change Password -->
+        <div class="acc-card">
+          <div class="acc-card-title">CHANGE PASSWORD</div>
+          <div class="form-row">
+            <div class="form-label">// SEND_RESET_LINK (by email)</div>
+            <button class="btn-sm info" onclick="sendResetLink()">SEND RESET EMAIL</button>
+          </div>
+          <div style="font-family:var(--mono);font-size:.65rem;color:var(--text-dim);margin:12px 0;">— OR —</div>
+          <div class="form-row">
+            <div class="form-label">// CURRENT_PASSWORD</div>
+            <input class="form-input" type="password" id="curPass" placeholder="current"/>
+          </div>
+          <div class="form-row">
+            <div class="form-label">// NEW_PASSWORD</div>
+            <input class="form-input" type="password" id="newPass" placeholder="new (min 6)"/>
+          </div>
+          <button class="btn-sm" onclick="changePassword()">UPDATE PASSWORD</button>
+          <div id="passMsg"></div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="acc-card" style="border-color:rgba(255,51,102,.3);">
+          <div class="acc-card-title" style="color:var(--red);">DANGER ZONE</div>
+          <div style="font-family:var(--mono);font-size:.75rem;color:var(--text-dim);margin-bottom:16px;">
+            Permanently delete your account. This cannot be undone.
+          </div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            <button class="btn-sm danger" onclick="openModal('deleteAccModal')">DELETE ACCOUNT</button>
+            <button class="btn-sm" onclick="doLogout()">LOGOUT</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="settingsPage">
+      <div class="page-title" style="margin-bottom:24px;">// SETTINGS</div>
+      <div class="settings-grid">
+
+        <!-- Theme -->
+        <div class="set-card">
+          <div class="set-card-title">THEME</div>
+          <div class="theme-swatches">
+            <div class="swatch active" style="background:#070b0f;color:#00ff99;" onclick="setTheme('dark',this)">DARK</div>
+            <div class="swatch" style="background:#f0f4f8;color:#007755;" onclick="setTheme('light',this)">LIGHT</div>
+            <div class="swatch" style="background:#0a0610;color:#ff3366;" onclick="setTheme('red',this)">RED</div>
+            <div class="swatch" style="background:#060a12;color:#00c8ff;" onclick="setTheme('blue',this)">BLUE</div>
+          </div>
+        </div>
+
+        <!-- Export -->
+        <div class="set-card">
+          <div class="set-card-title">EXPORT VICTIMS DATA</div>
+          <div class="export-btns">
+            <button class="export-btn" onclick="exportData('txt')"><span class="ext">TXT</span> Plain text format</button>
+            <button class="export-btn" onclick="exportData('csv')"><span class="ext">CSV</span> Spreadsheet format</button>
+            <button class="export-btn" onclick="exportData('json')"><span class="ext">JSON</span> JSON data format</button>
+            <button class="export-btn" onclick="exportData('pdf')"><span class="ext" style="color:var(--red);border-color:var(--red);">PDF</span> Print-ready document</button>
+          </div>
+        </div>
+
+        <!-- System Info -->
+        <div class="set-card">
+          <div class="set-card-title">SYSTEM INFO</div>
+          <div style="font-family:var(--mono);font-size:.75rem;color:var(--text-dim);line-height:2;">
+            <div>VERSION: <span style="color:var(--accent);">v2.1.0</span></div>
+            <div>BUILD: <span style="color:var(--accent);">2025.01</span></div>
+            <div>NODE: <span style="color:var(--accent2);" id="infoNode">—</span></div>
+            <div>DATABASE: <span style="color:var(--accent2);" id="infoFirebase">CONNECTED</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /dashScreen -->
+
+
+<!-- ==================== FIREBASE + APP LOGIC ==================== -->
+<script type="module">
+// ============================================================
+// ⚙  FIREBASE CONFIG — Replace with your own from Firebase Console
+// ============================================================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  signOut, onAuthStateChanged, updateProfile, updatePassword,
+  reauthenticateWithCredential, EmailAuthProvider, sendPasswordResetEmail,
+  deleteUser
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore, collection, addDoc, getDocs, deleteDoc,
+  doc, onSnapshot, query, orderBy, serverTimestamp, Timestamp
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAIaLegzw6zormEeShU-aJVHQJ9xst5mZo",
+  authDomain: "relaychatbox.firebaseapp.com",
+  projectId: "relaychatbox",
+  storageBucket: "relaychatbox.firebasestorage.app",
+  messagingSenderId: "467332024133",
+  appId: "1:467332024133:web:6a70774f2d55ad95ba602c",
+  measurementId: "G-5MDTQ0V1DK"
+};
+// ============================================================
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// ============ GLOBALS ============
+let currentUser = null;
+let victims = [];
+let sortKey = 'date';
+let pendingDeleteId = null;
+let termHistory = [];
+let termHistIdx = -1;
+let avatarDataURL = null;
+
+// ============ LOAD ANIMATION ============
+const loadBar = document.getElementById('loadBar');
+const loadText = document.getElementById('loadText');
+const loadOverlay = document.getElementById('loadOverlay');
+let loadPct = 0;
+const loadSteps = ['CONNECTING TO FIREBASE...','INITIALIZING AUTH...','LOADING MODULES...','READY.'];
+let loadStep = 0;
+const loadInterval = setInterval(() => {
+  loadPct = Math.min(loadPct + Math.random() * 20, 90);
+  loadBar.style.width = loadPct + '%';
+  if (loadPct > (loadStep+1)*22 && loadStep < 3) { loadText.textContent = loadSteps[++loadStep]; }
+}, 200);
+
+// ============ AUTH STATE ============
+onAuthStateChanged(auth, user => {
+  clearInterval(loadInterval);
+  loadBar.style.width = '100%';
+  setTimeout(() => {
+    loadOverlay.classList.add('hidden');
+    if (user) {
+      currentUser = user;
+      enterDash();
+    } else {
+      showScreen('loginScreen');
+    }
+  }, 400);
+});
+
+// ============ LOGIN / REGISTER ============
+window.doLogin = async () => {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  document.getElementById('loginErr').textContent = '';
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) {
+    document.getElementById('loginErr').textContent = '// ERR: ' + friendlyErr(e.code);
+  }
+};
+
+window.doRegister = async () => {
+  const name = document.getElementById('regName').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const pass = document.getElementById('regPass').value;
+  document.getElementById('regErr').textContent = '';
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    if(name) await updateProfile(cred.user, {displayName: name});
+  } catch(e) {
+    document.getElementById('regErr').textContent = '// ERR: ' + friendlyErr(e.code);
+  }
+};
+
+window.doLogout = async () => {
+  await signOut(auth);
+  victims = [];
+  showScreen('loginScreen');
+  toast('SESSION TERMINATED');
+};
+
+window.switchToRegister = () => {
+  document.getElementById('loginForm').style.display = 'none';
+  document.getElementById('registerForm').style.display = '';
+};
+window.switchToLogin = () => {
+  document.getElementById('registerForm').style.display = 'none';
+  document.getElementById('loginForm').style.display = '';
+};
+
+// ============ DASH INIT ============
+function enterDash() {
+  showScreen('dashScreen');
+  const u = auth.currentUser;
+  const name = u.displayName || u.email.split('@')[0];
+  document.getElementById('sidebarUser').textContent = name.toUpperCase();
+  document.getElementById('infoNode').textContent = u.uid.slice(0,8).toUpperCase();
+  updateAccountPage();
+  loadVictims();
+  startClock();
+  bootTerminal();
+  showPage('homePage', document.querySelector('[data-page="homePage"]'));
+}
+
+// ============ VICTIMS — FIRESTORE ============
+function loadVictims() {
+  const q = query(collection(db, 'victims'), orderBy('createdAt', 'desc'));
+  onSnapshot(q, snap => {
+    victims = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    renderVictims();
+    updateStats();
+  }, err => {
+    // Fallback if rules block or demo mode
+    console.warn('Firestore:', err.message);
+  });
+}
+
+function updateStats() {
+  document.getElementById('statVictims').textContent = victims.length;
+  const ips = new Set(victims.map(v=>v.ip).filter(Boolean));
+  const ctrs = new Set(victims.map(v=>v.country).filter(Boolean));
+  document.getElementById('statIPs').textContent = ips.size;
+  document.getElementById('statCountries').textContent = ctrs.size;
+  const today = new Date().toISOString().slice(0,10);
+  const tod = victims.filter(v => {
+    if(!v.date) return false;
+    return v.date.slice(0,10) === today || (v.createdAt?.toDate?.()?.toISOString?.()?.slice(0,10) === today);
+  }).length;
+  document.getElementById('statToday').textContent = tod;
+}
+
+window.renderVictims = () => {
+  const search = document.getElementById('searchVictims').value.toLowerCase();
+  let list = [...victims];
+  if(search) list = list.filter(v =>
+    [v.email,v.username,v.ip,v.country,v.password].some(f => f && f.toLowerCase().includes(search))
+  );
+  list.sort((a,b) => {
+    if(sortKey==='date') return (b.createdAt?.seconds||0)-(a.createdAt?.seconds||0);
+    return (a[sortKey]||'').localeCompare(b[sortKey]||'');
+  });
+  const tbody = document.getElementById('victimsBody');
+  if(list.length===0){ tbody.innerHTML=''; document.getElementById('noVictims').style.display=''; return; }
+  document.getElementById('noVictims').style.display='none';
+  tbody.innerHTML = list.map((v,i) => {
+    const dt = v.createdAt?.toDate?.() || (v.date ? new Date(v.date) : new Date());
+    const dateStr = dt.toLocaleDateString('en-GB');
+    const timeStr = dt.toLocaleTimeString('en-GB');
+    return `<tr>
+      <td style="color:var(--text-dim)">${i+1}</td>
+      <td class="td-email">${esc(v.email||'—')}</td>
+      <td>${esc(v.username||'—')}</td>
+      <td class="td-pass">${esc(v.password||'—')}</td>
+      <td class="td-ip">${esc(v.ip||'—')}</td>
+      <td>${esc(v.country||'—')}</td>
+      <td style="color:var(--text-dim)">${dateStr}</td>
+      <td style="color:var(--text-dim)">${timeStr}</td>
+      <td><button class="btn-del" onclick="promptDelete('${v.id}')">DEL</button></td>
+    </tr>`;
+  }).join('');
+};
+
+window.setSort = (key, el) => {
+  sortKey = key;
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderVictims();
+};
+
+window.promptDelete = (id) => {
+  pendingDeleteId = id;
+  openModal('deleteModal');
+};
+document.getElementById('confirmDelBtn').onclick = async () => {
+  if(!pendingDeleteId) return;
+  try {
+    await deleteDoc(doc(db, 'victims', pendingDeleteId));
+    toast('RECORD DELETED');
+  } catch(e){ toast('DELETE FAILED: '+e.message, true); }
+  closeModal('deleteModal');
+  pendingDeleteId = null;
+};
+
+window.addDemoVictim = async () => {
+  const demos = ['alice@example.com','bob@test.net','charlie@mail.org','diana@corp.io'];
+  const countries = ['US','GB','DE','FR','JP','BR','CA','AU'];
+  const r = demos[Math.floor(Math.random()*demos.length)];
+  try {
+    await addDoc(collection(db, 'victims'), {
+      email: r,
+      username: r.split('@')[0],
+      password: 'p@ss' + Math.floor(Math.random()*9999),
+      ip: `${rnd(255)}.${rnd(255)}.${rnd(255)}.${rnd(255)}`,
+      country: countries[Math.floor(Math.random()*countries.length)],
+      date: new Date().toISOString(),
+      createdAt: serverTimestamp()
+    });
+    toast('DEMO RECORD ADDED');
+  } catch(e){ toast('FIRESTORE NOT CONFIGURED — set up rules',true); }
+};
+
+// ============ ACCOUNT ============
+function updateAccountPage() {
+  const u = auth.currentUser;
+  if(!u) return;
+  const name = u.displayName || u.email.split('@')[0];
+  document.getElementById('profileName').textContent = name;
+  document.getElementById('profileEmail').textContent = u.email;
+  document.getElementById('editName').value = u.displayName || '';
+  document.getElementById('avatarInitial').textContent = name[0].toUpperCase();
+  if(u.photoURL){ 
+    document.getElementById('avatarImg').src = u.photoURL;
+    document.getElementById('avatarImg').style.display = '';
+    document.getElementById('avatarInitial').style.display = 'none';
+  }
+}
+
+window.handleAvatar = (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    avatarDataURL = ev.target.result;
+    document.getElementById('avatarImg').src = avatarDataURL;
+    document.getElementById('avatarImg').style.display = '';
+    document.getElementById('avatarInitial').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+};
+
+window.saveProfile = async () => {
+  const name = document.getElementById('editName').value.trim();
+  const msg = document.getElementById('profileMsg');
+  try {
+    const upd = {};
+    if(name) upd.displayName = name;
+    if(avatarDataURL) upd.photoURL = avatarDataURL;
+    await updateProfile(auth.currentUser, upd);
+    updateAccountPage();
+    document.getElementById('sidebarUser').textContent = (name || auth.currentUser.email.split('@')[0]).toUpperCase();
+    msg.innerHTML = '<div class="msg-ok">// PROFILE UPDATED</div>';
+    toast('PROFILE SAVED');
+  } catch(e){ msg.innerHTML = `<div class="msg-err">// ERR: ${e.message}</div>`; }
+};
+
+window.sendResetLink = async () => {
+  try {
+    await sendPasswordResetEmail(auth, auth.currentUser.email);
+    toast('RESET EMAIL SENT TO ' + auth.currentUser.email.toUpperCase());
+  } catch(e){ toast('FAILED: '+e.message, true); }
+};
+
+window.changePassword = async () => {
+  const cur = document.getElementById('curPass').value;
+  const nw = document.getElementById('newPass').value;
+  const msg = document.getElementById('passMsg');
+  if(!cur||!nw){ msg.innerHTML='<div class="msg-err">// FILL BOTH FIELDS</div>'; return; }
+  try {
+    const cred = EmailAuthProvider.credential(auth.currentUser.email, cur);
+    await reauthenticateWithCredential(auth.currentUser, cred);
+    await updatePassword(auth.currentUser, nw);
+    msg.innerHTML='<div class="msg-ok">// PASSWORD UPDATED</div>';
+    document.getElementById('curPass').value='';
+    document.getElementById('newPass').value='';
+    toast('PASSWORD CHANGED');
+  } catch(e){ msg.innerHTML=`<div class="msg-err">// ERR: ${friendlyErr(e.code)}</div>`; }
+};
+
+document.getElementById('confirmDelAccBtn').onclick = async () => {
+  const pass = document.getElementById('delAccPass').value;
+  try {
+    const cred = EmailAuthProvider.credential(auth.currentUser.email, pass);
+    await reauthenticateWithCredential(auth.currentUser, cred);
+    await deleteUser(auth.currentUser);
+    closeModal('deleteAccModal');
+    toast('ACCOUNT DELETED');
+  } catch(e){ toast('ERR: '+friendlyErr(e.code), true); }
+};
+
+// ============ SETTINGS ============
+window.setTheme = (t, el) => {
+  document.documentElement.setAttribute('data-theme', t==='dark'?'':t);
+  document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  localStorage.setItem('theme', t);
+};
+
+window.exportData = (fmt) => {
+  if(!victims.length){ toast('NO DATA TO EXPORT', true); return; }
+  const rows = victims.map(v => {
+    const dt = v.createdAt?.toDate?.() || new Date(v.date||Date.now());
+    return {
+      email: v.email||'', username: v.username||'', password: v.password||'',
+      ip: v.ip||'', country: v.country||'',
+      date: dt.toLocaleDateString('en-GB'), time: dt.toLocaleTimeString('en-GB')
+    };
+  });
+
+  if(fmt==='csv'){
+    const hdr = 'EMAIL,USERNAME,PASSWORD,IP,COUNTRY,DATE,TIME\n';
+    const body = rows.map(r=>Object.values(r).map(v=>`"${v}"`).join(',')).join('\n');
+    download('victims.csv', hdr+body, 'text/csv');
+  } else if(fmt==='json'){
+    download('victims.json', JSON.stringify(rows, null, 2), 'application/json');
+  } else if(fmt==='txt'){
+    const lines = rows.map(r => `EMAIL: ${r.email} | USER: ${r.username} | PASS: ${r.password} | IP: ${r.ip} | COUNTRY: ${r.country} | ${r.date} ${r.time}`).join('\n');
+    download('victims.txt', lines, 'text/plain');
+  } else if(fmt==='pdf'){
+    exportPDF(rows);
+    return;
+  }
+  toast('EXPORT COMPLETE: ' + fmt.toUpperCase());
+};
+
+function exportPDF(rows) {
+  const win = window.open('', '_blank');
+  win.document.write(`<html><head><title>Victims Export</title>
+  <style>body{font-family:monospace;background:#070b0f;color:#00ff99;padding:20px;}
+  table{border-collapse:collapse;width:100%;}th,td{border:1px solid #1a2a3a;padding:8px;font-size:11px;}
+  th{background:#0d1117;color:#00c8ff;}tr:nth-child(even){background:#0a0f14;}
+  h2{color:#00ff99;letter-spacing:.3em;}</style></head>
+  <body><h2>VICTIMS DATABASE EXPORT</h2>
+  <p style="color:#4a6a5a;font-size:11px;">Generated: ${new Date().toLocaleString()}</p>
+  <table><tr><th>EMAIL</th><th>USERNAME</th><th>PASSWORD</th><th>IP</th><th>COUNTRY</th><th>DATE</th><th>TIME</th></tr>
+  ${rows.map(r=>`<tr><td>${r.email}</td><td>${r.username}</td><td>${r.password}</td><td>${r.ip}</td><td>${r.country}</td><td>${r.date}</td><td>${r.time}</td></tr>`).join('')}
+  </table></body></html>`);
+  win.document.close();
+  setTimeout(()=>{win.print();},500);
+  toast('PDF PRINT DIALOG OPENED');
+}
+
+// ============ TERMINAL ============
+const CMDS = {
+  help: () => [
+    '  AVAILABLE COMMANDS:',
+    '  help         — show this help',
+    '  whoami       — current user info',
+    '  victims      — victims count',
+    '  stats        — database statistics',
+    '  clear        — clear terminal',
+    '  logout       — end session',
+    '  ping         — test connection',
+    '  date         — current date/time',
+    '  ver          — system version',
+  ],
+  whoami: () => {
+    const u = auth.currentUser;
+    return [
+      `  UID:    ${u?.uid}`,
+      `  EMAIL:  ${u?.email}`,
+      `  NAME:   ${u?.displayName || 'not set'}`,
+      `  SINCE:  ${u?.metadata?.creationTime}`,
+    ];
+  },
+  victims: () => [`  TOTAL VICTIMS: ${victims.length}`],
+  stats: () => {
+    const ips = new Set(victims.map(v=>v.ip).filter(Boolean));
+    const ctrs = new Set(victims.map(v=>v.country).filter(Boolean));
+    return [
+      `  TOTAL:     ${victims.length}`,
+      `  UNIQUE IPs:${ips.size}`,
+      `  COUNTRIES: ${ctrs.size}`,
+    ];
+  },
+  clear: () => { document.getElementById('termOutput').innerHTML=''; return []; },
+  logout: () => { doLogout(); return ['  SESSION TERMINATED...']; },
+  ping: () => ['  PONG — FIREBASE REACHABLE'],
+  date: () => [`  ${new Date().toString()}`],
+  ver: () => ['  VOID KIT v2.1.0 — build 2025.01'],
+};
+
+function bootTerminal() {
+  const o = document.getElementById('termOutput');
+  const u = auth.currentUser;
+  const lines = [
+    '<span class="info">VOID KIT SECURE TERMINAL v2.1</span>',
+    '<span class="out">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>',
+    `<span class="out">  Logged in as: <span style="color:var(--accent)">${u?.email}</span></span>`,
+    `<span class="out">  Session started: ${new Date().toLocaleString()}</span>`,
+    '<span class="out">  Type \'help\' for available commands.</span>',
+    '<span class="out">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span>',
+    ''
+  ];
+  o.innerHTML = lines.map(l=>`<div class="term-line">${l}</div>`).join('');
+  document.getElementById('termPrompt').textContent = `${u?.displayName||'root'}@sys:~$`;
+}
+
+window.handleTermKey = (e) => {
+  const inp = document.getElementById('termInput');
+  if(e.key === 'Enter'){
+    const cmd = inp.value.trim().toLowerCase();
+    inp.value = '';
+    if(!cmd) return;
+    termHistory.unshift(cmd);
+    termHistIdx = -1;
+    const o = document.getElementById('termOutput');
+    const u = auth.currentUser;
+    const prompt = u?.displayName||'root';
+    appendTerm(`<span class="prompt">${prompt}@sys:~$</span> <span class="cmd">${esc(cmd)}</span>`);
+    if(CMDS[cmd]){
+      const out = CMDS[cmd]();
+      out.forEach(l => appendTerm(`<span class="out">${esc(l)}</span>`));
+    } else {
+      appendTerm(`<span class="err">bash: ${esc(cmd)}: command not found</span>`);
+    }
+    appendTerm('');
+    o.scrollTop = o.scrollHeight;
+  } else if(e.key === 'ArrowUp'){
+    if(termHistIdx < termHistory.length-1){ termHistIdx++; inp.value = termHistory[termHistIdx]||''; }
+    e.preventDefault();
+  } else if(e.key === 'ArrowDown'){
+    if(termHistIdx > 0){ termHistIdx--; inp.value = termHistory[termHistIdx]||''; }
+    else{ termHistIdx=-1; inp.value=''; }
+    e.preventDefault();
+  }
+};
+
+function appendTerm(html){
+  const o = document.getElementById('termOutput');
+  const d = document.createElement('div');
+  d.className = 'term-line';
+  d.innerHTML = html;
+  o.appendChild(d);
+}
+
+// ============ CLOCK ============
+function startClock(){
+  function tick(){
+    const now = new Date();
+    document.getElementById('clock').textContent =
+      now.toTimeString().slice(0,8);
+  }
+  tick(); setInterval(tick,1000);
+}
+
+// ============ HELPERS ============
+window.showPage = (pid, el) => {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById(pid).classList.add('active');
+  if(el) el.classList.add('active');
+  const names = {homePage:'HOME',victimsPage:'VICTIMS',accountPage:'MY ACCOUNT',settingsPage:'SETTINGS'};
+  document.getElementById('topbarPath').textContent = names[pid]||pid;
+  if(pid==='accountPage') updateAccountPage();
+};
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+window.openModal = (id) => document.getElementById(id).classList.add('open');
+window.closeModal = (id) => document.getElementById(id).classList.remove('open');
+
+function toast(msg, err=false){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (err?' error':'');
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function rnd(n){ return Math.floor(Math.random()*n); }
+function download(name, content, type){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], {type}));
+  a.download = name; a.click();
+}
+
+function friendlyErr(code){
+  const m = {
+    'auth/invalid-email': 'INVALID EMAIL FORMAT',
+    'auth/user-not-found': 'USER NOT FOUND',
+    'auth/wrong-password': 'WRONG PASSWORD',
+    'auth/email-already-in-use': 'EMAIL ALREADY REGISTERED',
+    'auth/weak-password': 'PASSWORD TOO WEAK (min 6 chars)',
+    'auth/invalid-credential': 'INVALID CREDENTIALS',
+    'auth/too-many-requests': 'TOO MANY ATTEMPTS — TRY LATER',
+    'auth/network-request-failed': 'NETWORK ERROR',
+    'auth/requires-recent-login': 'RE-LOGIN REQUIRED FOR THIS ACTION',
+  };
+  return m[code] || code;
+}
+
+// ===== RESTORE THEME =====
+const saved = localStorage.getItem('theme');
+if(saved && saved!=='dark') { document.documentElement.setAttribute('data-theme',saved); }
+</script>
+<script type="module">
+  // ================== TEMPLATE STORE ==================
+
+const siteTemplates = [
+  {
+    name: "Modern Dashboard",
+    desc: "Clean futuristic admin dashboard template with responsive layout.",
+    image: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?q=80&w=1200",
+    tags: ["dashboard","admin","ui"],
+    link: "#"
+  },
+
+  {
+    name: "Portfolio Landing",
+    desc: "Personal portfolio website template for developers and creators.",
+    image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=1200",
+    tags: ["portfolio","personal","modern"],
+    link: "#"
+  },
+
+  {
+    name: "Startup Website",
+    desc: "Modern startup homepage with pricing and features section.",
+    image: "https://images.unsplash.com/photo-1551434678-e076c223a692?q=80&w=1200",
+    tags: ["startup","landing","business"],
+    link: "#"
+  },
+
+  {
+    name: "Dark Login UI",
+    desc: "Stylish centered authentication interface with cyberpunk design.",
+    image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200",
+    tags: ["login","dark","cyberpunk"],
+    link: "#"
+  }
+];
+
+window.renderSites = () => {
+
+  const grid = document.getElementById('sitesGrid');
+  const search =
+    document.getElementById('siteSearch').value.toLowerCase();
+
+  const filtered = siteTemplates.filter(site =>
+    (
+      site.name +
+      site.desc +
+      site.tags.join(' ')
+    ).toLowerCase().includes(search)
+  );
+
+  grid.innerHTML = filtered.map(site => `
+    <div class="site-card">
+
+      <img class="site-preview" src="${site.image}" />
+
+      <div class="site-content">
+
+        <div class="site-title">
+          ${site.name}
+        </div>
+
+        <div class="site-desc">
+          ${site.desc}
+        </div>
+
+        <div class="site-tags">
+          ${site.tags.map(t =>
+            `<div class="site-tag">${t}</div>`
+          ).join('')}
+        </div>
+
+        <button
+          class="site-btn"
+          onclick="window.open('${site.link}','_blank')"
+        >
+          GET LINK
+        </button>
+
+      </div>
+
+    </div>
+  `).join('');
+};
+
+// render when opening page
+setTimeout(() => {
+  if(document.getElementById('sitesGrid')){
+    renderSites();
+  }
+}, 1000);
+</script>
+</body>
+</html>
