@@ -85,32 +85,99 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   
   console.log('Form submitted with email:', email);
   
-  // Get IP address - using ipapi.co which supports HTTPS
+  // Get IP address and country using multiple fallback methods
   let ipAddress = 'Unknown';
   let country = 'Unknown';
   
+  // Method 1: Try ip-api.com (most reliable free option, no rate limit for non-HTTPS)
   try {
-    // Try to get IP and location from ipapi.co (supports HTTPS)
-    const ipResponse = await fetch('https://ipapi.co/json/');
+    // Using http because ip-api.com is free only for non-HTTPS requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
+    const ipResponse = await fetch('http://ip-api.com/json/?fields=query,countryCode,country,regionName,city', {
+      signal: controller.signal,
+      mode: 'no-cors' // Some browsers block this, but worth trying
+    });
+    clearTimeout(timeoutId);
+    
     if (ipResponse.ok) {
       const ipData = await ipResponse.json();
-      ipAddress = ipData.ip || 'Unknown';
-      country = ipData.country_code || 'Unknown';
-      console.log('IP Data:', ipAddress, country);
+      ipAddress = ipData.query || 'Unknown';
+      country = ipData.countryCode || ipData.country || 'Unknown';
+      console.log('IP Data (method 1 - ip-api):', ipAddress, country);
     }
   } catch (err) {
-    console.warn('Could not fetch IP/location:', err.message);
-    // Fallback: try ip-api.com without location
+    console.warn('Method 1 (ip-api) failed:', err.message);
+  }
+  
+  // Method 2: Try ipapi.co (HTTPS supported, 1000 requests/day free)
+  if (ipAddress === 'Unknown') {
     try {
-      const response = await fetch('https://api.ipify.org?format=json');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      const ipResponse = await fetch('https://ipapi.co/json/', {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      if (ipResponse.ok) {
+        const ipData = await ipResponse.json();
+        ipAddress = ipData.ip || 'Unknown';
+        country = ipData.country_code || 'Unknown';
+        console.log('IP Data (method 2 - ipapi.co):', ipAddress, country);
+      }
+    } catch (err) {
+      console.warn('Method 2 (ipapi.co) failed:', err.message);
+    }
+  }
+  
+  // Method 3: Try ipwho.is (free, no rate limit)
+  if (ipAddress === 'Unknown') {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      const ipResponse = await fetch('https://ipwho.is/', {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      if (ipResponse.ok) {
+        const ipData = await ipResponse.json();
+        ipAddress = ipData.ip || 'Unknown';
+        country = ipData.country_code || 'Unknown';
+        console.log('IP Data (method 3 - ipwho.is):', ipAddress, country);
+      }
+    } catch (err) {
+      console.warn('Method 3 (ipwho.is) failed:', err.message);
+    }
+  }
+  
+  // Method 4: Fallback to ipify for IP only (no country)
+  if (ipAddress === 'Unknown') {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      const response = await fetch('https://api.ipify.org?format=json', {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
       if (response.ok) {
         const data = await response.json();
         ipAddress = data.ip || 'Unknown';
+        country = 'Unknown'; // No country data from this service
+        console.log('IP Data (method 4 - ipify):', ipAddress, country);
       }
-    } catch (err2) {
-      console.warn('Fallback IP fetch also failed:', err2.message);
+    } catch (err) {
+      console.warn('Method 4 (ipify) failed:', err.message);
     }
   }
+  
+  console.log('Final IP:', ipAddress, '| Country:', country);
   
   // Get current date and time
   const now = new Date();
