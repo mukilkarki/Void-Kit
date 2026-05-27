@@ -1360,7 +1360,7 @@ window.renderSites = function() {
           <div class="site-tags">
             ${site.tags.map(t => `<div class="site-tag">${t}</div>`).join('')}
           </div>
-          <button class="site-btn" onclick="window.generateTunnelForSite(${index})">
+          <button class="site-btn" onclick="window.generateTunnelForSite(${index})" id="getLinkBtn${index}">
             GET LINK
           </button>
         </div>
@@ -1378,7 +1378,7 @@ function generateTunnelId() {
   return 't_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
 }
 
-// Generate tunnel for a specific site (global)
+// Call the Python bridge to start ngrok tunnel
 window.generateTunnelForSite = function(siteIndex) {
   try {
     console.log('generateTunnelForSite called with index:', siteIndex);
@@ -1390,48 +1390,59 @@ window.generateTunnelForSite = function(siteIndex) {
     }
     
     const tunnelId = generateTunnelId();
-    const tunnelName = site.name.replace(/\s+/g, '_').toLowerCase();
-    const expiry = new Date(Date.now() + 30 * 60 * 1000);
+    const btn = document.getElementById('getLinkBtn' + siteIndex);
+    if (btn) btn.textContent = 'CREATING...';
     
-    const tunnelUrl = 'sites/' + site.file + '?tunnel=' + tunnelId;
-    
-    console.log('Tunnel created:', tunnelId);
-    console.log('URL:', tunnelUrl);
-    
-    // Store tunnel info
-    window.tunnels = window.tunnels || [];
-    window.tunnels.push({
-      id: tunnelId,
-      name: tunnelName,
-      url: tunnelUrl,
-      createdAt: new Date(),
-      expiresAt: expiry,
-      active: true,
-      template: site.name
+    // Send request to Python server to create ngrok tunnel
+    fetch('http://localhost:5001/api/create-tunnel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        siteFile: site.file,
+        tunnelId: tunnelId,
+        ngrokApiKey: NGROK_API_KEY
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success && data.ngrokUrl) {
+        const tunnelUrl = data.ngrokUrl + '/' + site.file + '?tunnel=' + tunnelId;
+        
+        // Store tunnel info
+        window.tunnels = window.tunnels || [];
+        window.tunnels.push({
+          id: tunnelId,
+          name: site.name.replace(/\s+/g, '_').toLowerCase(),
+          url: tunnelUrl,
+          createdAt: new Date(),
+          expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+          active: true,
+          template: site.name
+        });
+        
+        // Copy URL to clipboard
+        const textarea = document.createElement('textarea');
+        textarea.value = tunnelUrl;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        
+        toast('✅ LINK COPIED TO CLIPBOARD');
+      } else {
+        toast('ERROR: ' + (data.error || 'Failed to create tunnel'), true);
+      }
+      if (btn) btn.textContent = 'GET LINK';
+    })
+    .catch(err => {
+      console.error('Error:', err);
+      toast('ERROR: Cannot connect to tunnel server. Make sure server.py is running.', true);
+      if (btn) btn.textContent = 'GET LINK';
     });
-    
-    // Copy URL to clipboard
-    const textarea = document.createElement('textarea');
-    textarea.value = tunnelUrl;
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textarea);
-    
-    // Show notification
-    if (typeof toast === 'function') {
-      toast('✅ LINK COPIED TO CLIPBOARD');
-    } else {
-      alert('Link copied: ' + tunnelUrl);
-    }
     
   } catch(e) {
     console.error('generateTunnelForSite error:', e);
-    if (typeof toast === 'function') {
-      toast('ERROR: ' + e.message, true);
-    } else {
-      alert('Error: ' + e.message);
-    }
+    toast('ERROR: ' + e.message, true);
   }
 };
 
