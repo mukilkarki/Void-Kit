@@ -1,0 +1,1 @@
+export const firebaseConfig = { apiKey: "AIzaSyAbJ-KqDDA9B9wITQpi25XPndCGgT4qmyU", authDomain: "mrvoid-kit.firebaseapp.com", projectId: "mrvoid-kit", storageBucket: "mrvoid-kit.firebasestorage.app", messagingSenderId: "819971579036", appId: "1:819971579036:web:13a8c9664b8be10435e159", measurementId: "G-R9GG8W5336" };
