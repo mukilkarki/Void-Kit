@@ -472,6 +472,44 @@
   background:var(--accent);
   color:var(--bg);
 }
+
+/* ===== TUNNEL STATUS BAR ===== */
+.tunnel-status{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-left:3px solid var(--accent);
+  padding:14px 20px;
+  margin-bottom:20px;
+  display:flex;
+  align-items:center;
+  gap:20px;
+  flex-wrap:wrap;
+  font-family:var(--mono);
+  font-size:.72rem;
+}
+.tunnel-info{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.tunnel-label{
+  color:var(--text-dim);
+  letter-spacing:.1em;
+}
+.tunnel-timer{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-left:auto;
+}
+.timer-display{
+  font-family:var(--display);
+  font-size:1.2rem;
+  color:var(--accent);
+  letter-spacing:.15em;
+  text-shadow:0 0 10px var(--border-glow);
+  min-width:70px;
+}
 </style>
 </head>
 <body>
@@ -609,7 +647,7 @@
         <input class="term-input" id="termInput" placeholder="type 'help' for commands..." onkeydown="handleTermKey(event)"/>
       </div>
     </div>
-<!-- SITES PAGE -->
+  <!-- SITES PAGE -->
 <div class="page" id="sitesPage">
 
   <div class="page-header">
@@ -621,6 +659,23 @@
       placeholder="SEARCH TEMPLATES..."
       oninput="renderSites()"
     />
+  </div>
+
+  <!-- NGROK TUNNEL STATUS & TIMER -->
+  <div id="timerSection" class="tunnel-status" style="display:none;">
+    <div class="tunnel-info">
+      <span class="tunnel-label">TUNNEL:</span>
+      <span id="ngrokStatus" style="color:var(--accent);font-weight:bold;">INACTIVE</span>
+    </div>
+    <div class="tunnel-info">
+      <span class="tunnel-label">LINK:</span>
+      <a id="ngrokLinkDisplay" href="#" target="_blank" style="color:var(--accent2);font-family:var(--mono);font-size:.75rem;word-break:break-all;">—</a>
+    </div>
+    <div class="tunnel-timer">
+      <span class="tunnel-label">EXPIRES IN:</span>
+      <span id="ngrokTimer" class="timer-display">15:00</span>
+    </div>
+    <button id="stopNgrokBtn" class="btn-sm danger" onclick="stopNgrok()" style="flex-shrink:0;">STOP</button>
   </div>
 
   <div id="sitesGrid" class="sites-grid"></div>
