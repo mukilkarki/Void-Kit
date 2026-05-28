@@ -509,35 +509,18 @@ if(saved && saved!=='dark') { document.documentElement.setAttribute('data-theme'
 
 const siteTemplates = [
   {
-    name: "Modern Dashboard",
-    desc: "Clean futuristic admin dashboard template with responsive layout.",
-    image: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?q=80&w=1200",
-    tags: ["dashboard","admin","ui"],
-    link: "#"
+    name: "Login Page",
+    desc: "Standard login page",
+    image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23222'/%3E%3Ctext x='50' y='55' font-family='monospace' font-size='14' fill='%2300ff99' text-anchor='middle'%3ELOGIN%3C/text%3E%3C/svg%3E",
+    tags: ["login", "standard"],
+    link: "sites/login.html"
   },
-
   {
-    name: "Portfolio Landing",
-    desc: "Personal portfolio website template for developers and creators.",
-    image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=1200",
-    tags: ["portfolio","personal","modern"],
-    link: "#"
-  },
-
-  {
-    name: "Startup Website",
-    desc: "Modern startup homepage with pricing and features section.",
-    image: "https://images.unsplash.com/photo-1551434678-e076c223a692?q=80&w=1200",
-    tags: ["startup","landing","business"],
-    link: "#"
-  },
-
-  {
-    name: "Dark Login UI",
-    desc: "Stylish centered authentication interface with cyberpunk design.",
-    image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200",
-    tags: ["login","dark","cyberpunk"],
-    link: "#"
+    name: "Google Login",
+    desc: "Google styled login page",
+    image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%234285F4'/%3E%3Ctext x='50' y='55' font-family='sans-serif' font-size='14' fill='white' text-anchor='middle'%3EGoogle%3C/text%3E%3C/svg%3E",
+    tags: ["login", "google"],
+    link: "sites/google.html"
   }
 ];
 
