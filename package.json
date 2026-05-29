@@ -1,15 +1,12 @@
 {
   "name": "void-kit",
   "version": "1.0.0",
-  "description": "Void Kit – local server with ngrok manager, ready for Render deployment",
+  "description": "Void Kit – static server for Render deployment",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "engines": {
     "node": ">=14"
-  },
-  "dependencies": {
-    "ngrok": "latest"
   }
 }
