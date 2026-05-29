@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: void-kit
+    env: node
+    buildCommand: "echo 'No build step required'"
+    startCommand: "node server.js"
+    envVars:
+      - key: PORT
+        value: "3000"
+      - key: FIREBASE_API_KEY
+        fromSecret: firebase_api_key
+      - key: FIREBASE_PROJECT_ID
+        fromSecret: firebase_project_id      - key: FIREBASE_AUTH_DOMAIN
+        fromSecret: firebase_auth_domain
+      - key: FIREBASE_DATABASE_URL        fromSecret: firebase_database_url
+      - key: FIREBASE_STORAGE_BUCKET
+        fromSecret: firebase_storage_bucket
+      - key: FIREBASE_MESSAGING_SENDER_ID
+        fromSecret: firebase_messaging_sender_id
+      - key: FIREBASE_APP_ID
+        fromSecret: firebase_app_id
+      - key: NGROK_AUTHTOKEN
+        fromSecret: ngrok_authtoken
+    autoDeploy: true
