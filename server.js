@@ -41,9 +41,7 @@ function startNgrok(ownerUid) {
     currentOwnerUid = ownerUid;
 
     // Spawn ngrok
-    ngrokProcess = spawn(path.join(__dirname, 'ngrok.exe'), ['http', PORT.toString(), '--log=stdout'], {
-      cwd: __dirname,
-      windowsHide: true,
+    ngrokProcess = spawn('ngrok', ['http', PORT.toString(), '--log=stdout', '--authtoken', process.env.NGROK_AUTHTOKEN], {
       stdio: ['ignore', 'pipe', 'pipe']
     });
 
