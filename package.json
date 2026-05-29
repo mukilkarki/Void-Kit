@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Void Kit – static server for Render deployment",
   "main": "server.js",
+  "type": "module",
   "scripts": {
     "start": "node server.js"
   },
