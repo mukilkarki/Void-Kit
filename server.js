@@ -106,7 +106,7 @@ const server = http.createServer(async (req, res) => {
 
   // === API ENDPOINTS ===
 
-  // POST /api/ngrok/start
+ // POST /api/ngrok/start
   if (pathname === '/api/ngrok/start' && req.method === 'POST') {
     let body = '';
     req.on('data', chunk => body += chunk);
@@ -120,6 +120,7 @@ const server = http.createServer(async (req, res) => {
 
         // If ngrok is already running for this user, return existing URL
         if (ngrokUrl && currentOwnerUid === ownerUid && getTimeRemaining() > 0) {
+          console.log('Returning existing tunnel for user:', ownerUid);
           writeJson(res, 200, {
             url: ngrokUrl,
             timeRemaining: getTimeRemaining(),
@@ -131,12 +132,15 @@ const server = http.createServer(async (req, res) => {
 
         // If ngrok is running for a different user or expired, restart
         if (ngrokUrl) {
+          console.log('Restarting tunnel for new user');
           await killNgrokSync();
           // Small delay for cleanup
           await new Promise(r => setTimeout(r, 1000));
         }
 
+        console.log('Starting new tunnel for user:', ownerUid);
         const tunnelUrl = await startNgrok(ownerUid);
+        console.log('Tunnel started successfully:', tunnelUrl);
         writeJson(res, 200, {
           url: tunnelUrl,
           timeRemaining: getTimeRemaining(),
@@ -144,6 +148,7 @@ const server = http.createServer(async (req, res) => {
           active: true
         });
       } catch (e) {
+        console.error('Error starting tunnel:', e.message);
         writeJson(res, 500, { error: e.message });
       }
     });
