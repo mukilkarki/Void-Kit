@@ -10,9 +10,11 @@ services:
       - key: FIREBASE_API_KEY
         fromSecret: firebase_api_key
       - key: FIREBASE_PROJECT_ID
-        fromSecret: firebase_project_id      - key: FIREBASE_AUTH_DOMAIN
+        fromSecret: firebase_project_id
+      - key: FIREBASE_AUTH_DOMAIN
         fromSecret: firebase_auth_domain
-      - key: FIREBASE_DATABASE_URL        fromSecret: firebase_database_url
+      - key: FIREBASE_DATABASE_URL
+        fromSecret: firebase_database_url
       - key: FIREBASE_STORAGE_BUCKET
         fromSecret: firebase_storage_bucket
       - key: FIREBASE_MESSAGING_SENDER_ID
