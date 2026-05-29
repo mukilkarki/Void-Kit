@@ -7,7 +7,7 @@ const path = require('path');
 const { spawn, exec } = require('child_process');
 const ngrok = require('ngrok');
 
-const PORT = 3000;
+const PORT = parseInt(process.env.PORT, 10) || 3000;
 const NGROK_TIMEOUT = 15 * 60 * 1000; // 15 minutes
 
 let ngrokProcess = null;
