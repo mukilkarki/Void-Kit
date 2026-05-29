@@ -5,6 +5,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { spawn, exec } = require('child_process');
+const ngrok = require('ngrok');
 
 const PORT = 3000;
 const NGROK_TIMEOUT = 15 * 60 * 1000; // 15 minutes
@@ -33,81 +34,42 @@ const MIME = {
 
 // ============ NGROK MANAGEMENT ============
 
-function startNgrok(ownerUid) {
-  return new Promise((resolve, reject) => {
-    // Kill existing ngrok if running
-    killNgrokSync();
+async function startNgrok(ownerUid) {
+  // Kill existing ngrok if running
+  killNgrokSync();
 
-    currentOwnerUid = ownerUid;
+  currentOwnerUid = ownerUid;
 
-    // Spawn ngrok
-    ngrokProcess = spawn('ngrok', ['http', PORT.toString(), '--log=stdout', '--authtoken', process.env.NGROK_AUTHTOKEN], {
-      stdio: ['ignore', 'pipe', 'pipe']
+  try {
+    const url = await ngrok.connect({
+      addr: PORT,
+      authtoken: process.env.NGROK_AUTHTOKEN,
     });
 
-    ngrokProcess.on('error', (err) => {
-      console.error('ngrok spawn error:', err.message);
-      reject(err);
-    });
+    linkCreatedAt = Date.now();
 
-    ngrokProcess.stdout.on('data', (data) => {
-      console.log('ngrok:', data.toString());
-    });
+    // Set 15-minute expiry
+    if (expiryTimer) clearTimeout(expiryTimer);
+    expiryTimer = setTimeout(() => {
+      killNgrokSync();
+      console.log('ngrok tunnel auto-expired after 15 minutes');
+    }, NGROK_TIMEOUT);
 
-    ngrokProcess.stderr.on('data', (data) => {
-      console.log('ngrok:', data.toString());
-    });
-
-    // Poll ngrok API for tunnel URL
-    let attempts = 0;
-    const maxAttempts = 25;
-    const pollInterval = setInterval(async () => {
-      attempts++;
-      try {
-        const resp = await fetch('http://127.0.0.1:4040/api/tunnels');
-        if (resp.ok) {
-          const data = await resp.json();
-          const tunnels = data.tunnels || [];
-          const httpsTunnel = tunnels.find(t => t.public_url && t.public_url.startsWith('https'));
-          if (httpsTunnel) {
-            ngrokUrl = httpsTunnel.public_url;
-            linkCreatedAt = Date.now();
-            clearInterval(pollInterval);
-
-            // Set 15-minute expiry
-            if (expiryTimer) clearTimeout(expiryTimer);
-            expiryTimer = setTimeout(() => {
-              killNgrokSync();
-              console.log('ngrok tunnel auto-expired after 15 minutes');
-            }, NGROK_TIMEOUT);
-
-            console.log('ngrok tunnel started:', ngrokUrl);
-            resolve(ngrokUrl);
-            return;
-          }
-        }
-      } catch (e) {
-        // ngrok API not ready yet
-      }
-
-      if (attempts >= maxAttempts) {
-        clearInterval(pollInterval);
-        killNgrokSync();
-        reject(new Error('ngrok failed to start within timeout'));
-      }
-    }, 1200);
-  });
+    ngrokUrl = url;
+    console.log('ngrok tunnel started:', ngrokUrl);
+    return ngrokUrl;
+  } catch (err) {
+    console.error('ngrok connect error:', err.message);
+    throw err;
+  }
 }
 
-function killNgrokSync() {
-  if (ngrokProcess) {
-    try { ngrokProcess.kill('SIGTERM'); } catch(e) {}
-    ngrokProcess = null;
-  }
-  // Force kill all ngrok processes
+async function killNgrokSync() {
   try {
-    exec('taskkill /f /im ngrok.exe 2>nul', () => {});
-  } catch(e) {}
+    await ngrok.disconnect();
+  } catch (e) {
+    // Ignore disconnect errors if no tunnel was active
+  }
 
   ngrokUrl = null;
   currentOwnerUid = null;
@@ -169,7 +131,7 @@ const server = http.createServer(async (req, res) => {
 
         // If ngrok is running for a different user or expired, restart
         if (ngrokUrl) {
-          killNgrokSync();
+          await killNgrokSync();
           // Small delay for cleanup
           await new Promise(r => setTimeout(r, 1000));
         }
@@ -257,10 +219,7 @@ function writeJson(res, status, data) {
 
 // ============ START ============
 
-// Kill any existing ngrok processes on startup
-try {
-  exec('taskkill /f /im ngrok.exe 2>nul', () => {});
-} catch(e) {}
+// No need for taskkill on startup when using the ngrok npm package
 
 server.listen(PORT, () => {
   console.log(`\n╔═══════════════════════════════════╗`);
