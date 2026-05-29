@@ -1,14 +1,10 @@
-// ============================================================
-// VOID KIT — NODE.JS SERVER (Render deployment)
-// ============================================================
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const { fileURLToPath } = require('url');
+import http from 'http';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 const PORT = process.env.PORT || 3000;
 
 // MIME types
@@ -34,7 +30,7 @@ const server = http.createServer((req, res) => {
     res.writeHead(204, {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type'
+      'Access-Control-Allow-Headers': 'Content-Type',
     });
     res.end();
     return;
@@ -89,7 +85,7 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, () => {
   console.log(`\n╔═══════════════════════════════════╗`);
-  console.log(`  ║   VOID KIT SERVER v3.0            ║`);
-  console.log(`  ║   Running on port ${PORT}           ║`);
-  console.log(`  ╚═══════════════════════════════════╝\n`);
+  console.log(` ║ VOID KIT SERVER v3.0 ║`);
+  console.log(` ║ Running on port ${PORT} ║`);
+  console.log(` ╚══════════════════════════════════╝\n`);
 });
