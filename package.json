@@ -10,6 +10,6 @@
     "node": ">=14"
   },
   "dependencies": {
-    "ngrok": "^4.16.0"
+    "ngrok": "latest"
   }
 }
