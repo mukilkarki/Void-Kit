@@ -282,7 +282,7 @@ class VoidKitHandler(http.server.BaseHTTPRequestHandler):
 
     def serve_static(self):
         if self.path == '/':
-            file_path = 'dashboard.html'
+            file_path = 'index.html'
         else:
             clean_path = self.path.split('?')[0].lstrip('/')
             file_path = clean_path if clean_path else 'dashboard.html'
@@ -326,9 +326,9 @@ if __name__ == '__main__':
     mimetypes.add_type('application/javascript', '.js')
     mimetypes.add_type('text/css', '.css')
     server = http.server.HTTPServer(('0.0.0.0', PORT), VoidKitHandler)
-    print(f'\n  ╔═══════════════════════════════════╗')
+    print(f'\n╔═══════════════════════════════════╗')
     print(f'  ║   VOID KIT SERVER v2.1            ║')
-    print(f'  ║   http://localhost:{PORT}              ║')
+    print(f'  ║   https://void-kit.onrender.com   ║')
     print(f'  ╚═══════════════════════════════════╝\n')
     try:
         server.serve_forever()

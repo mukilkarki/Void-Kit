@@ -130,7 +130,7 @@ function getTimeRemaining() {
 // ============ HTTP SERVER ============
 
 const server = http.createServer(async (req, res) => {
-  const url = new URL(req.url, `http://localhost:${PORT}`);
+  const url = new URL(req.url, `https://void-kit.onrender.com`);
   const pathname = url.pathname;
 
   // Handle CORS preflight
@@ -265,9 +265,9 @@ try {
 } catch(e) {}
 
 server.listen(PORT, () => {
-  console.log(`\n  ╔═══════════════════════════════════╗`);
+  console.log(`\n╔═══════════════════════════════════╗`);
   console.log(`  ║   VOID KIT SERVER v2.1            ║`);
-  console.log(`  ║   http://localhost:${PORT}              ║`);
+  console.log(`  ║   https://void-kit.onrender.com   ║`);
   console.log(`  ╚═══════════════════════════════════╝\n`);
 });
 
