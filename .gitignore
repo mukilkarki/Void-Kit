@@ -1,1 +1,35 @@
-.continue/
+# Ignore sensitive files
+.env
+node_modules/
+.DS_Store
+*.log
+*.tmp
+
+# Ignore build artifacts
+dist/
+build/
+*.map
+
+# Ignore IDE files
+.vscode/
+*.vsix
+*.sln
+*.user
+*.suo
+*.user.css
+*.suo
+*.vsixmanifest
+
+# Ignore test files
+test_*
+*.spec
+*.test
+*.e2e
+
+# Ignore deployment files
+vercel.json
+package-lock.json
+yarn.lock
+*.env.local
+*.env.production
+*.env.staging

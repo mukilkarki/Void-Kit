@@ -1,0 +1,13 @@
+{
+  "name": "void-kit",
+  "version": "1.0.0",
+  "description": "Void Kit – local server with ngrok manager, ready for Vercel deployment",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=14"
+  },
+  "dependencies": {}
+}
