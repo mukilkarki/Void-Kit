@@ -21,6 +21,9 @@ services:
         fromSecret: firebase_messaging_sender_id
       - key: FIREBASE_APP_ID
         fromSecret: firebase_app_id
-      - key: NGROK_AUTHTOKEN
-        fromSecret: ngrok_authtoken
     autoDeploy: true
+</arg_value>
+<arg_key>path</arg_key>
+<arg_key>task_progress</arg_key>
+<arg_value> - [x] Update server.js to remove ngrok - [x] Remove ngrok dependency from package.json - [x] Remove NGROK_AUTHTOKEN from render.yaml - [x] Fix MODULE_TYPELESS_PACKAGE_JSON warning by adding "type": "module" - [x] Convert server.js to ES module syntax (import instead of require) - [x] Update app.js to use /api/link endpoint - [x] Clean up app.js ngrok code - [ ] Clean up index.html ngrok UI </arg_value>
+</write_to_file>

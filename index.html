@@ -394,122 +394,122 @@
 
   /* ===== SITES PAGE ===== */
 
-.sites-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
-  gap:20px;
-}
+  .sites-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+    gap:20px;
+  }
 
-.site-card{
-  background:var(--panel);
-  border:1px solid var(--border);
-  overflow:hidden;
-  position:relative;
-  transition:.2s;
-}
+  .site-card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    overflow:hidden;
+    position:relative;
+    transition:.2s;
+  }
 
-.site-card:hover{
-  transform:translateY(-4px);
-  border-color:var(--accent);
-  box-shadow:0 0 20px var(--border-glow);
-}
+  .site-card:hover{
+    transform:translateY(-4px);
+    border-color:var(--accent);
+    box-shadow:0 0 20px var(--border-glow);
+  }
 
-.site-preview{
-  width:100%;
-  height:180px;
-  object-fit:cover;
-  background:#111;
-}
+  .site-preview{
+    width:100%;
+    height:180px;
+    object-fit:cover;
+    background:#111;
+  }
 
-.site-content{
-  padding:18px;
-}
+  .site-content{
+    padding:18px;
+  }
 
-.site-title{
-  font-family:var(--display);
-  color:var(--accent);
-  font-size:.9rem;
-  letter-spacing:.15em;
-  margin-bottom:10px;
-}
+  .site-title{
+    font-family:var(--display);
+    color:var(--accent);
+    font-size:.9rem;
+    letter-spacing:.15em;
+    margin-bottom:10px;
+  }
 
-.site-desc{
-  font-family:var(--mono);
-  color:var(--text-dim);
-  font-size:.72rem;
-  line-height:1.6;
-  margin-bottom:14px;
-}
+  .site-desc{
+    font-family:var(--mono);
+    color:var(--text-dim);
+    font-size:.72rem;
+    line-height:1.6;
+    margin-bottom:14px;
+  }
 
-.site-tags{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-  margin-bottom:16px;
-}
+  .site-tags{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-bottom:16px;
+  }
 
-.site-tag{
-  border:1px solid var(--border);
-  padding:4px 8px;
-  font-size:.6rem;
-  font-family:var(--mono);
-  color:var(--accent2);
-}
+  .site-tag{
+    border:1px solid var(--border);
+    padding:4px 8px;
+    font-size:.6rem;
+    font-family:var(--mono);
+    color:var(--accent2);
+  }
 
-.site-btn{
-  width:100%;
-  background:transparent;
-  border:1px solid var(--accent);
-  color:var(--accent);
-  padding:10px;
-  cursor:pointer;
-  font-family:var(--display);
-  letter-spacing:.2em;
-  transition:.2s;
-}
+  .site-btn{
+    width:100%;
+    background:transparent;
+    border:1px solid var(--accent);
+    color:var(--accent);
+    padding:10px;
+    cursor:pointer;
+    font-family:var(--display);
+    letter-spacing:.2em;
+    transition:.2s;
+  }
 
-.site-btn:hover{
-  background:var(--accent);
-  color:var(--bg);
-}
+  .site-btn:hover{
+    background:var(--accent);
+    color:var(--bg);
+  }
 
-/* ===== TUNNEL STATUS BAR ===== */
-.tunnel-status{
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-left:3px solid var(--accent);
-  padding:14px 20px;
-  margin-bottom:20px;
-  display:flex;
-  align-items:center;
-  gap:20px;
-  flex-wrap:wrap;
-  font-family:var(--mono);
-  font-size:.72rem;
-}
-.tunnel-info{
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
-.tunnel-label{
-  color:var(--text-dim);
-  letter-spacing:.1em;
-}
-.tunnel-timer{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  margin-left:auto;
-}
-.timer-display{
-  font-family:var(--display);
-  font-size:1.2rem;
-  color:var(--accent);
-  letter-spacing:.15em;
-  text-shadow:0 0 10px var(--border-glow);
-  min-width:70px;
-}
+  /* ===== TUNNEL STATUS BAR ===== */
+  .tunnel-status{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-left:3px solid var(--accent);
+    padding:14px 20px;
+    margin-bottom:20px;
+    display:flex;
+    align-items:center;
+    gap:20px;
+    flex-wrap:wrap;
+    font-family:var(--mono);
+    font-size:.72rem;
+  }
+  .tunnel-info{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .tunnel-label{
+    color:var(--text-dim);
+    letter-spacing:.1em;
+  }
+  .tunnel-timer{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-left:auto;
+  }
+  .timer-display{
+    font-family:var(--display);
+    font-size:1.2rem;
+    color:var(--accent);
+    letter-spacing:.15em;
+    text-shadow:0 0 10px var(--border-glow);
+    min-width:70px;
+  }
 </style>
 </head>
 <body>
@@ -554,280 +554,4 @@
 </div>
 
 <!-- ==================== LOGIN ==================== -->
-<div class="screen active" id="loginScreen">
-  <div style="text-align:center;">
-    <div class="login-glitch">MRVOID KIT</div>
-    <div class="login-sub">SECURE TERMINAL v2.1 — AUTHENTICATE TO PROCEED</div>
-    <div class="login-box" id="loginBox">
-      <div class="corner tl"></div><div class="corner tr"></div>
-      <div class="corner bl"></div><div class="corner br"></div>
-
-      <!-- Firebase Config -->
-      <div class="cfg-notice" id="cfgNotice">
-       ⚠ This &lt;mrvoid kit&gt; is created for only educational and fun purpose. We are not reponsible for any damage or loss caused by this kit. Please use it in a legal and ethical way.
-        <a href="https://console.firebase.google.com" target="_blank">Teams & Conditions →</a>
-      </div> 
-
-      <div id="loginForm">
-        <div class="field-label">// EMAIL_ADDRESS</div>
-        <input class="field-input" type="email" id="loginEmail" placeholder="user@domain.com" autocomplete="email"/>
-        <div class="field-label">// PASSWORD</div>
-        <input class="field-input" type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password"/>
-        <button class="btn-primary" onclick="doLogin()">[ AUTHENTICATE ]</button>
-        <div class="login-err" id="loginErr"></div>
-        <div class="login-toggle">No account? <span onclick="switchToRegister()">REGISTER</span></div>
-      </div>
-
-      <div id="registerForm" style="display:none;">
-        <div class="field-label">// USERNAME</div>
-        <input class="field-input" type="text" id="regName" placeholder="operator_handle"/>
-        <div class="field-label">// EMAIL_ADDRESS</div>
-        <input class="field-input" type="email" id="regEmail" placeholder="user@domain.com"/>
-        <div class="field-label">// PASSWORD</div>
-        <input class="field-input" type="password" id="regPass" placeholder="min 6 chars"/>
-        <button class="btn-primary" onclick="doRegister()">[ CREATE ACCOUNT ]</button>
-        <div class="login-err" id="regErr"></div>
-        <div class="login-toggle">Have an account? <span onclick="switchToLogin()">LOGIN</span></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ==================== DASHBOARD ==================== -->
-<div class="screen" id="dashScreen">
-
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-    <div class="sidebar-logo">MRVOID KIT<span>PANEL v2.1</span></div>
-    <div class="nav-item active" data-page="homePage" onclick="showPage('homePage',this)">
-      <span class="nav-icon">⬡</span>HOME
-    </div>
-    <!-- SIDEBAR MENU -->
-<div class="nav-item" data-page="sitesPage" onclick="showPage('sitesPage',this)">
-  <span class="nav-icon">⬢</span>SITES
-</div>
-    <div class="nav-item" data-page="victimsPage" onclick="showPage('victimsPage',this)">
-      <span class="nav-icon">◈</span>VICTIMS
-    </div>
-    <div class="nav-item" data-page="accountPage" onclick="showPage('accountPage',this)">
-      <span class="nav-icon">◉</span>MY ACCOUNT
-    </div>
-    <div class="nav-item" data-page="settingsPage" onclick="showPage('settingsPage',this)">
-      <span class="nav-icon">⚙</span>SETTINGS
-    </div>
-    <div class="nav-spacer"></div>
-    <div class="sidebar-user">
-      <span class="status-dot"></span>ONLINE<br/>
-      <strong id="sidebarUser">—</strong>
-    </div>
-  </div>
-
-  <!-- MAIN AREA -->
-  <div class="main">
-    <div class="topbar">
-      <div>VOID KIT / <span class="topbar-path" id="topbarPath">HOME</span></div>
-      <div class="topbar-right">
-        <span class="topbar-time" id="clock">00:00:00</span>
-        <button class="btn-sm danger" onclick="doLogout()" style="font-size:.65rem;padding:5px 12px;">LOGOUT</button>
-      </div>
-    </div>
-
-    <!-- HOME / TERMINAL -->
-    <div class="page active" id="homePage">
-      <div class="term-stats" id="statsRow">
-        <div class="stat-card"><div class="s-label">TOTAL VICTIMS</div><div class="s-val" id="statVictims">0</div></div>
-        <div class="stat-card"><div class="s-label">UNIQUE IPs</div><div class="s-val" id="statIPs">0</div></div>
-        <div class="stat-card"><div class="s-label">COUNTRIES</div><div class="s-val" id="statCountries">0</div></div>
-        <div class="stat-card"><div class="s-label">TODAY</div><div class="s-val" id="statToday">0</div></div>
-      </div>
-      <div class="term-header">// TERMINAL</div>
-      <div class="term-window" id="termOutput"></div>
-      <div class="term-input-row">
-        <span class="term-prompt-label" id="termPrompt">root@sys:~$</span>
-        <input class="term-input" id="termInput" placeholder="type 'help' for commands..." onkeydown="handleTermKey(event)"/>
-      </div>
-    </div>
-  <!-- SITES PAGE -->
-<div class="page" id="sitesPage">
-
-  <div class="page-header">
-    <div class="page-title">// TEMPLATE STORE</div>
-
-    <input
-      class="search-bar"
-      id="siteSearch"
-      placeholder="SEARCH TEMPLATES..."
-      oninput="renderSites()"
-    />
-  </div>
-
-  <!-- NGROK TUNNEL STATUS & TIMER -->
-  <div id="timerSection" class="tunnel-status" style="display:none;">
-    <div class="tunnel-info">
-      <span class="tunnel-label">TUNNEL:</span>
-      <span id="ngrokStatus" style="color:var(--accent);font-weight:bold;">INACTIVE</span>
-    </div>
-    <div class="tunnel-info">
-      <span class="tunnel-label">LINK:</span>
-      <a id="ngrokLinkDisplay" href="#" target="_blank" style="color:var(--accent2);font-family:var(--mono);font-size:.75rem;word-break:break-all;">—</a>
-    </div>
-    <div class="tunnel-timer">
-      <span class="tunnel-label">EXPIRES IN:</span>
-      <span id="ngrokTimer" class="timer-display">15:00</span>
-    </div>
-    <button id="stopNgrokBtn" class="btn-sm danger" onclick="stopNgrok()" style="flex-shrink:0;">STOP</button>
-  </div>
-
-  <div id="sitesGrid" class="sites-grid"></div>
-
-</div>
-    <!-- VICTIMS -->
-    <div class="page" id="victimsPage">
-      <div class="page-header">
-        <div class="page-title">// VICTIMS DATABASE</div>
-        <input class="search-bar" id="searchVictims" placeholder="SEARCH..." oninput="renderVictims()"/>
-      </div>
-      <div class="sort-btns" style="margin-bottom:16px;">
-        <button class="sort-btn active" onclick="setSort('date',this)">DATE</button>
-        <button class="sort-btn" onclick="setSort('email',this)">EMAIL</button>
-        <button class="sort-btn" onclick="setSort('username',this)">USERNAME</button>
-        <button class="sort-btn" onclick="setSort('ip',this)">IP</button>
-        <button class="sort-btn" onclick="setSort('country',this)">COUNTRY</button>
-        <button class="sort-btn" style="margin-left:auto;" onclick="addDemoVictim()">+ ADD DEMO</button>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>EMAIL</th>
-              <th>USERNAME</th>
-              <th>PASSWORD</th>
-              <th>IP ADDRESS</th>
-              <th>COUNTRY</th>
-              <th>DATE</th>
-              <th>TIME</th>
-              <th>DEL</th>
-            </tr>
-          </thead>
-          <tbody id="victimsBody"></tbody>
-        </table>
-      </div>
-      <div id="noVictims" class="no-data" style="display:none;">
-        <div style="font-family:var(--display);font-size:1.5rem;color:var(--text-dim);margin-bottom:8px;">NO RECORDS</div>
-        <div style="font-size:.8rem;">Victims list is empty or no matches found.</div>
-      </div>
-    </div>
-
-    <!-- MY ACCOUNT -->
-    <div class="page" id="accountPage">
-      <div class="page-title" style="margin-bottom:24px;">// MY ACCOUNT</div>
-      <div class="acc-grid">
-
-        <!-- Profile -->
-        <div class="acc-card">
-          <div class="acc-card-title">PROFILE</div>
-          <div class="avatar-area">
-            <div class="avatar" onclick="document.getElementById('avatarInput').click()" title="Click to change photo">
-              <img id="avatarImg" src="" style="display:none;"/>
-              <span id="avatarInitial">?</span>
-            </div>
-            <input type="file" id="avatarInput" accept="image/*" style="display:none;" onchange="handleAvatar(event)"/>
-            <div class="avatar-info">
-              <div class="uname" id="profileName">—</div>
-              <div class="uemail" id="profileEmail">—</div>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-label">// DISPLAY_NAME</div>
-            <input class="form-input" type="text" id="editName" placeholder="your handle"/>
-          </div>
-          <button class="btn-sm" onclick="saveProfile()">SAVE PROFILE</button>
-          <div id="profileMsg"></div>
-        </div>
-
-        <!-- Change Password -->
-        <div class="acc-card">
-          <div class="acc-card-title">CHANGE PASSWORD</div>
-          <div class="form-row">
-            <div class="form-label">// SEND_RESET_LINK (by email)</div>
-            <button class="btn-sm info" onclick="sendResetLink()">SEND RESET EMAIL</button>
-          </div>
-          <div style="font-family:var(--mono);font-size:.65rem;color:var(--text-dim);margin:12px 0;">— OR —</div>
-          <div class="form-row">
-            <div class="form-label">// CURRENT_PASSWORD</div>
-            <input class="form-input" type="password" id="curPass" placeholder="current"/>
-          </div>
-          <div class="form-row">
-            <div class="form-label">// NEW_PASSWORD</div>
-            <input class="form-input" type="password" id="newPass" placeholder="new (min 6)"/>
-          </div>
-          <button class="btn-sm" onclick="changePassword()">UPDATE PASSWORD</button>
-          <div id="passMsg"></div>
-        </div>
-
-        <!-- Danger Zone -->
-        <div class="acc-card" style="border-color:rgba(255,51,102,.3);">
-          <div class="acc-card-title" style="color:var(--red);">DANGER ZONE</div>
-          <div style="font-family:var(--mono);font-size:.75rem;color:var(--text-dim);margin-bottom:16px;">
-            Permanently delete your account. This cannot be undone.
-          </div>
-          <div style="display:flex;gap:12px;flex-wrap:wrap;">
-            <button class="btn-sm danger" onclick="openModal('deleteAccModal')">DELETE ACCOUNT</button>
-            <button class="btn-sm" onclick="doLogout()">LOGOUT</button>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- SETTINGS -->
-    <div class="page" id="settingsPage">
-      <div class="page-title" style="margin-bottom:24px;">// SETTINGS</div>
-      <div class="settings-grid">
-
-        <!-- Theme -->
-        <div class="set-card">
-          <div class="set-card-title">THEME</div>
-          <div class="theme-swatches">
-            <div class="swatch active" style="background:#070b0f;color:#00ff99;" onclick="setTheme('dark',this)">DARK</div>
-            <div class="swatch" style="background:#f0f4f8;color:#007755;" onclick="setTheme('light',this)">LIGHT</div>
-            <div class="swatch" style="background:#0a0610;color:#ff3366;" onclick="setTheme('red',this)">RED</div>
-            <div class="swatch" style="background:#060a12;color:#00c8ff;" onclick="setTheme('blue',this)">BLUE</div>
-          </div>
-        </div>
-
-        <!-- Export -->
-        <div class="set-card">
-          <div class="set-card-title">EXPORT VICTIMS DATA</div>
-          <div class="export-btns">
-            <button class="export-btn" onclick="exportData('txt')"><span class="ext">TXT</span> Plain text format</button>
-            <button class="export-btn" onclick="exportData('csv')"><span class="ext">CSV</span> Spreadsheet format</button>
-            <button class="export-btn" onclick="exportData('json')"><span class="ext">JSON</span> JSON data format</button>
-            <button class="export-btn" onclick="exportData('pdf')"><span class="ext" style="color:var(--red);border-color:var(--red);">PDF</span> Print-ready document</button>
-          </div>
-        </div>
-
-        <!-- System Info -->
-        <div class="set-card">
-          <div class="set-card-title">SYSTEM INFO</div>
-          <div style="font-family:var(--mono);font-size:.75rem;color:var(--text-dim);line-height:2;">
-            <div>VERSION: <span style="color:var(--accent);">v2.1.0</span></div>
-            <div>BUILD: <span style="color:var(--accent);">2025.01</span></div>
-            <div>NODE: <span style="color:var(--accent2);" id="infoNode">—</span></div>
-            <div>DATABASE: <span style="color:var(--accent2);" id="infoFirebase">CONNECTED</span></div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-  </div><!-- /main -->
-</div><!-- /dashScreen -->
-
-
-<!-- ==================== FIREBASE + APP LOGIC ==================== -->
-<script type="module" src="app.js">
-</script>
-</body>
-</html>
+<div class="screen active"
